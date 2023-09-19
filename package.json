@@ -1,0 +1,70 @@
+{
+  "name": "@openartmarket/supabase-live-table",
+  "version": "0.0.0",
+  "description": "Supabase Realtime on Absinthe",
+  "homepage": "",
+  "author": {
+    "name": "Open Art Market",
+    "email": "hi@openartmarket.com",
+    "url": "https://openartmarket.com"
+  },
+  "files": [
+    "lib"
+  ],
+  "main": "lib/index.js",
+  "keywords": [
+    "supabase",
+    "realtime"
+  ],
+  "devDependencies": {
+    "@supabase/supabase-js": "2.33.2",
+    "eslint": "8.49.0",
+    "eslint-config-prettier": "9.0.0",
+    "eslint-plugin-prettier": "5.0.0",
+    "husky": "8.0.3",
+    "lint-staged": "14.0.1",
+    "npm-check-updates": "16.14.4",
+    "prettier": "3.0.3",
+    "supabase": "1.99.5",
+    "typescript": "5.2.2",
+    "vite": "4.4.9",
+    "vitest": "0.34.4"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "git add"
+    ],
+    "*.json": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "eslintConfig": {
+    "extends": [
+      "prettier"
+    ],
+    "env": {
+      "node": true
+    },
+    "rules": {
+      "prettier/prettier": "error"
+    },
+    "plugins": [
+      "prettier"
+    ]
+  },
+  "scripts": {
+    "test": "vitest",
+    "lint": "eslint .",
+    "upgrade": "npm-check-updates --upgrade",
+    "codegen": "supabase gen types typescript --local > test/Database.ts"
+  },
+  "repository": "openartmarket/supabase-live-table",
+  "license": "MIT"
+}
