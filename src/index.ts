@@ -64,7 +64,7 @@ export type LiveCallbacks<TableRow extends Row> = {
  * @param params subscription params
  * @returns {@type RealtimeChannel}
  */
-export function live<TableRow extends Row>(params: LiveParams<TableRow>): LiveCallbacks<TableRow> {
+export function liveCallbacks<TableRow extends Row>(params: LiveParams<TableRow>): LiveCallbacks<TableRow> {
   const { same, err, initial, inserted: insert, updated: update, deleted: del } = params;
 
   let initialRecords: TableRow[] | undefined = undefined;
@@ -143,7 +143,7 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
     callback(err, records);
   }
 
-  const { selectCallback, realtimeCallback } = live<TableRow>({
+  const { selectCallback, realtimeCallback } = liveCallbacks<TableRow>({
     same(a, b) {
       return a.id === b.id;
     },
@@ -188,6 +188,10 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
       realtimeCallback
     )
     .subscribe();
+
+  // channel.on('system', {}, (payload) => {
+  //   console.log('system', payload);
+  // })
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
