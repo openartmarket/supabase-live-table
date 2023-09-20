@@ -17,7 +17,7 @@ describe('liveTable', () => {
   })
 
   it('filters on column', async () => {
-    await hasRecords(['bicycle'], async () => {
+    await hasRecords('vehicle', ['bicycle'], async () => {
       await supabase.from('thing').insert([
         { type: 'ignored', name: 'skateboard' },
         { type: 'vehicle', name: 'bicycle' },
@@ -27,24 +27,25 @@ describe('liveTable', () => {
   })
 
   it('handles inserts', async () => {
-    await hasRecords(['skateboard'], async () => {
+    await hasRecords('vehicle', ['skateboard'], async () => {
       await supabase.from('thing').insert({ type: 'vehicle', name: 'skateboard' }).throwOnError()
     })
   })
 
   it('handles deletes', async () => {
-    await hasRecords(['skateboard'], async () => {
-      await supabase.from('thing').insert([
+    await hasRecords('vehicle', ['skateboard', 'zeppelin'], async () => {
+      const { data } = await supabase.from('thing').insert([
         { type: 'vehicle', name: 'skateboard' },
         { type: 'vehicle', name: 'bicycle' },
         { type: 'vehicle', name: 'zeppelin' },
-      ]).throwOnError()
+      ]).select().throwOnError()
+      // console.log('INS', data?.map(({id, type, name}) => ({id, type, name})))
       await supabase.from('thing').delete().eq('name', 'bicycle').throwOnError()
     })
   })
 
   it('handles updates', async () => {
-    await hasRecords(['bike', 'skateboard', 'zeppelin'], async () => {
+    await hasRecords('vehicle', ['bike', 'skateboard', 'zeppelin'], async () => {
       await supabase.from('thing').insert([
         { type: 'vehicle', name: 'skateboard' },
         { type: 'vehicle', name: 'bicycle' },
@@ -54,7 +55,7 @@ describe('liveTable', () => {
     })
   })
 
-  async function hasRecords(expected: readonly string[], write: () => Promise<void>): Promise<void> {
+  async function hasRecords(columnValue: string, expected: readonly string[], write: () => Promise<void>): Promise<void> {
     let error: Error | undefined
     let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -62,7 +63,7 @@ describe('liveTable', () => {
       const channel = liveTable<ThingRow, 'type'>(supabase, {
         tableName: 'thing',
         columnName: 'type',
-        columnValue: 'vehicle',
+        columnValue,
         channelName: 'thing:vehicle',
         callback: (err, records) => {
           if (err) return reject(err)
