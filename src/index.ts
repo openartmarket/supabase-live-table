@@ -59,8 +59,8 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
 
   // @ts-ignore
   channel.on('system', {}, (payload) => {
-    // console.log('system', payload)
-    supabase.from(tableName)
+    if (payload.extension === 'postgres_changes') {
+      supabase.from(tableName)
       .select("*")
       .eq(columnName, columnValue)
       .then(({error, data}) => {
@@ -71,28 +71,73 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
           callback(undefined, liveTable.records);
         }
       })
+    }
   })
 
   return channel;
 }
 
+type BufferedInsert<TableRow> = {
+  type: 'inserted'
+  record: TableRow
+}
+
+type BufferedUpdate<TableRow> = {
+  type: 'updated'
+  record: TableRow
+}
+
+type BufferedDelete<TableRow> = {
+  type: 'deleted'
+  record: Partial<TableRow>
+}
+
+type BufferedRecord<TableRow> = BufferedInsert<TableRow> | BufferedUpdate<TableRow> | BufferedDelete<TableRow>
+
 export class LiveTable<TableRow extends Row> {
   private readonly recordById = new Map<ID, TableRow>();
+  private initialized = false;
+  private readonly buffer: BufferedRecord<TableRow>[] = [];
 
   initial(records: readonly TableRow[]) {
     for (const record of records) {
       // console.log('initial', this.p(record))
       this.recordById.set(record.id, record);
     }
+    this.initialized = true;
+    for (const buffered of this.buffer) {
+      switch (buffered.type) {
+        case 'inserted': {
+          this.inserted(buffered.record);
+          break;
+        }
+        case 'updated': {
+          this.updated(buffered.record);
+          break;
+        }
+        case 'deleted': {
+          this.deleted(buffered.record);
+          break;
+        }
+      }
+    }
   }
 
   inserted(record: TableRow) {
     // console.log('inserted', this.p(record))
+    if (!this.initialized) {
+      this.buffer.push({type: 'inserted', record});
+      return;
+    }
     this.recordById.set(record.id, record);
   }
 
   updated(record: TableRow) {
     // console.log('updated', this.p(record))
+    if (!this.initialized) {
+      this.buffer.push({type: 'updated', record});
+      return;
+    }
     this.recordById.set(record.id, record);
   }
 
@@ -101,6 +146,10 @@ export class LiveTable<TableRow extends Row> {
     const id = record.id;
     if (!id) {
       throw new Error(`deleted record has no id`)
+    }
+    if (!this.initialized) {
+      this.buffer.push({type: 'deleted', record});
+      return;
     }
     this.recordById.delete(id);
   }

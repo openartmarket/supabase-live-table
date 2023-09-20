@@ -34,12 +34,11 @@ describe('liveTable', () => {
 
   it('handles deletes', async () => {
     await hasRecords('vehicle', ['skateboard', 'zeppelin'], async () => {
-      const { data } = await supabase.from('thing').insert([
+      await supabase.from('thing').insert([
         { type: 'vehicle', name: 'skateboard' },
         { type: 'vehicle', name: 'bicycle' },
         { type: 'vehicle', name: 'zeppelin' },
       ]).select().throwOnError()
-      // console.log('INS', data?.map(({id, type, name}) => ({id, type, name})))
       await supabase.from('thing').delete().eq('name', 'bicycle').throwOnError()
     })
   })
