@@ -1,31 +1,47 @@
-import type {
+import {
+  REALTIME_SUBSCRIBE_STATES,
   RealtimeChannel,
   RealtimePostgresChangesPayload,
   SupabaseClient,
 } from "@supabase/supabase-js";
 
 type ID = string | number;
-type Row = Record<string, unknown> & { id: ID };
+export type Row = Record<string, unknown> & { id: ID };
 
-export type LiveTableCallback<TableRow> = (err: Error | undefined, records: readonly TableRow[]) => void;
+export type LiveTableCallback<TableRow> = (
+  err: Error | undefined,
+  records: readonly TableRow[],
+) => void;
 
-export type LiveTableParams<TableRow, ColumnName extends keyof TableRow & string> = {
-  tableName: string;
-  columnName: ColumnName;
-  columnValue: TableRow[ColumnName];
+export type LiveTableParams<
+  TableRow,
+  ColumnName extends keyof TableRow & string,
+> = {
+  table: string;
+  filterColumn: ColumnName;
+  filterValue: TableRow[ColumnName];
   channelName: string;
   callback: LiveTableCallback<TableRow>;
 };
 
 // https://github.com/GaryAustin1/Realtime2
 // https://github.com/orgs/supabase/discussions/5641
-export function liveTable<TableRow extends Row, ColumnName extends keyof TableRow & string>(
+export function liveTable<
+  TableRow extends Row,
+  ColumnName extends keyof TableRow & string,
+>(
   supabase: SupabaseClient,
-  params: LiveTableParams<TableRow, ColumnName>
+  params: LiveTableParams<TableRow, ColumnName>,
 ): RealtimeChannel {
   const liveTable = new LiveTable<TableRow>();
 
-  const { tableName, columnName, columnValue, channelName, callback } = params;
+  const {
+    table: tableName,
+    filterColumn: columnName,
+    filterValue: columnValue,
+    channelName,
+    callback,
+  } = params;
 
   const channel = supabase
     .channel(channelName)
@@ -38,6 +54,10 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
         filter: `${columnName}=eq.${columnValue}`,
       },
       (payload: RealtimePostgresChangesPayload<TableRow>) => {
+        // const timestamp = new Date(payload.commit_timestamp);
+        // console.log('timestamp', timestamp)
+        // TODO, pass the timestamp to inserted
+        // Maybe simply libeTable.handleEvent({ timestamp, type, record})
         switch (payload.eventType) {
           case "INSERT": {
             liveTable.inserted(payload.new);
@@ -53,69 +73,90 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
           }
         }
         callback(undefined, liveTable.records);
-      }
+      },
     )
-    .subscribe();
-
+    .subscribe((status) => {
+      // console.log("SUBSCRIPTION: " + status);
+      const ERROR_STATES: `${REALTIME_SUBSCRIBE_STATES}`[] = [
+        REALTIME_SUBSCRIBE_STATES.TIMED_OUT,
+        REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
+      ];
+      if (ERROR_STATES.includes(status)) {
+        callback(new Error("SUBSCRIPTION: " + status), []);
+      }
+    });
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  channel.on('system', {}, (payload) => {
-    if (payload.extension === 'postgres_changes') {
-      supabase.from(tableName)
-      .select("*")
-      .eq(columnName, columnValue)
-      .then(({error, data}) => {
-        if (error) {
-          callback(new Error(error.message), []);
-        } else {
-          liveTable.initial(data)
-          callback(undefined, liveTable.records);
-        }
-      })
+  channel.on("system", {}, (payload) => {
+    // console.log('system', payload)
+    if (payload.extension === "postgres_changes") {
+      supabase
+        .from(tableName)
+        .select("*")
+        .eq(columnName, columnValue)
+        .then(({ error, data }) => {
+          if (error) {
+            callback(new Error(error.message), []);
+          } else {
+            liveTable.initial(data);
+            callback(undefined, liveTable.records);
+          }
+        });
     }
-  })
+  });
 
   return channel;
 }
 
 type BufferedInsert<TableRow> = {
-  type: 'inserted'
-  record: TableRow
-}
+  type: "inserted";
+  record: TableRow;
+};
 
 type BufferedUpdate<TableRow> = {
-  type: 'updated'
-  record: TableRow
-}
+  type: "updated";
+  record: TableRow;
+};
 
 type BufferedDelete<TableRow> = {
-  type: 'deleted'
-  record: Partial<TableRow>
-}
+  type: "deleted";
+  record: Partial<TableRow>;
+};
 
-type BufferedRecord<TableRow> = BufferedInsert<TableRow> | BufferedUpdate<TableRow> | BufferedDelete<TableRow>
+type BufferedRecord<TableRow> =
+  | BufferedInsert<TableRow>
+  | BufferedUpdate<TableRow>
+  | BufferedDelete<TableRow>;
 
-export class LiveTable<TableRow extends Row> {
+export type ILiveTable<TableRow extends Row> = {
+  initial(records: readonly TableRow[]): void;
+  inserted(record: TableRow): void;
+  updated(record: TableRow): void;
+  deleted(record: Partial<TableRow>): void;
+  readonly records: readonly TableRow[];
+};
+
+export class LiveTable<TableRow extends Row> implements ILiveTable<TableRow> {
   private readonly recordById = new Map<ID, TableRow>();
   private initialized = false;
   private readonly buffer: BufferedRecord<TableRow>[] = [];
 
   initial(records: readonly TableRow[]) {
     for (const record of records) {
-      // console.log('initial', this.p(record))
       this.recordById.set(record.id, record);
     }
     this.initialized = true;
     for (const buffered of this.buffer) {
       switch (buffered.type) {
-        case 'inserted': {
+        case "inserted": {
           this.inserted(buffered.record);
           break;
         }
-        case 'updated': {
+        case "updated": {
           this.updated(buffered.record);
           break;
         }
-        case 'deleted': {
+        case "deleted": {
           this.deleted(buffered.record);
           break;
         }
@@ -124,31 +165,28 @@ export class LiveTable<TableRow extends Row> {
   }
 
   inserted(record: TableRow) {
-    // console.log('inserted', this.p(record))
     if (!this.initialized) {
-      this.buffer.push({type: 'inserted', record});
+      this.buffer.push({ type: "inserted", record });
       return;
     }
     this.recordById.set(record.id, record);
   }
 
   updated(record: TableRow) {
-    // console.log('updated', this.p(record))
     if (!this.initialized) {
-      this.buffer.push({type: 'updated', record});
+      this.buffer.push({ type: "updated", record });
       return;
     }
     this.recordById.set(record.id, record);
   }
 
   deleted(record: Partial<TableRow>) {
-    // console.log('deleted', this.p(record))
     const id = record.id;
     if (!id) {
-      throw new Error(`deleted record has no id`)
+      throw new Error(`deleted record has no id`);
     }
     if (!this.initialized) {
-      this.buffer.push({type: 'deleted', record});
+      this.buffer.push({ type: "deleted", record });
       return;
     }
     this.recordById.delete(id);
@@ -156,9 +194,5 @@ export class LiveTable<TableRow extends Row> {
 
   get records(): readonly TableRow[] {
     return [...this.recordById.values()];
-  }
-
-  p({id, type, name}: Partial<TableRow>) {
-    return {id, type, name} 
   }
 }
