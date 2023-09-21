@@ -10,6 +10,8 @@ Supabase Realtime provides low-level primitives for receiving notifications of c
 
 Supabase Live Table provides one function (`liveTable`) that replicates a Postgres table in memory, and keeps it up to date with changes to the table in real-time. It uses [Supabase Realtime](https://supabase.com/docs/guides/realtime) to receive notifications of changes to the table, and then updates its in-memory read only replica.
 
+The rows to replicate can be filtered by a column value.
+
 ## Installation
 
 ```sh
