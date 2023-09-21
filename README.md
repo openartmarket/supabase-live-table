@@ -20,11 +20,13 @@ npm install @openartmarket/supabase-live-table
 ```
 
 ### Step 2
-Copy and modify the [migrations.sql file](./supabase/migrations/20230919104332_initial-schema.sql) to create or update the table you want live data for in your database.
-
-After you are done, reset your supabase database with the new migration.sql file to apply changes
-
-
+Make sure the live data table has supabase_realtime publication
+```sql 
+drop publication if exists supabase_realtime; 
+create publication supabase_realtime; 
+-- Specify the table you're enabling realtime for 
+alter publication supabase_realtime add table "your_table";
+```
 
 ## Usage
 
@@ -92,6 +94,19 @@ The [Change Data Capture](https://en.wikipedia.org/wiki/Change_data_capture) alg
 
 ### ⚠️⚠️⚠️ 
 Automatic reconnection is *not* handled and must be implemented by the caller.
+
+## Testing this library
+Ensure you have a supabase database running locally and have set the following environment variables
+```sh
+export SUPABASE_URL="http://localhost:50321"
+export SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
+```
+Variables might be different depending on your local setup
+  
+Then run
+```sh
+  npm t
+```
 
 ## Examples
 
