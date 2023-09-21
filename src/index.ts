@@ -6,7 +6,11 @@ import {
 } from '@supabase/supabase-js';
 
 type ID = string | number;
-export type Row = Record<string, unknown> & { id: ID };
+export type Row = Record<string, unknown> & {
+  id: ID;
+  created_at: string;
+  updated_at: string | null;
+};
 
 export type LiveTableCallback<TableRow> = (
   err: Error | undefined,
@@ -21,8 +25,6 @@ export type LiveTableParams<TableRow, ColumnName extends keyof TableRow & string
   callback: LiveTableCallback<TableRow>;
 };
 
-// https://github.com/GaryAustin1/Realtime2
-// https://github.com/orgs/supabase/discussions/5641
 export function liveTable<TableRow extends Row, ColumnName extends keyof TableRow & string>(
   supabase: SupabaseClient,
   params: LiveTableParams<TableRow, ColumnName>,
@@ -49,21 +51,18 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
           filter: `${columnName}=eq.${columnValue}`,
         },
         (payload: RealtimePostgresChangesPayload<TableRow>) => {
-          // const timestamp = new Date(payload.commit_timestamp);
-          // console.log('timestamp', timestamp)
-          // TODO, pass the timestamp to inserted
-          // Maybe simply libeTable.handleEvent({ timestamp, type, record})
+          const timestamp = new Date(payload.commit_timestamp);
           switch (payload.eventType) {
             case 'INSERT': {
-              liveTable.processEvent({ type: 'INSERT', record: payload.new });
+              liveTable.processEvent({ type: 'INSERT', record: payload.new, timestamp });
               break;
             }
             case 'UPDATE': {
-              liveTable.processEvent({ type: 'UPDATE', record: payload.new });
+              liveTable.processEvent({ type: 'UPDATE', record: payload.new, timestamp });
               break;
             }
             case 'DELETE': {
-              liveTable.processEvent({ type: 'DELETE', record: payload.old });
+              liveTable.processEvent({ type: 'DELETE', record: payload.old, timestamp });
               break;
             }
           }
@@ -103,16 +102,19 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
 type Insert<TableRow> = {
   type: 'INSERT';
   record: TableRow;
+  timestamp: Date;
 };
 
 type Update<TableRow> = {
   type: 'UPDATE';
   record: TableRow;
+  timestamp: Date;
 };
 
 type Delete<TableRow> = {
   type: 'DELETE';
   record: Partial<TableRow>;
+  timestamp: Date;
 };
 
 export type LiveTableEvent<TableRow> = Insert<TableRow> | Update<TableRow> | Delete<TableRow>;

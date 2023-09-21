@@ -34,18 +34,21 @@ export interface Database {
           id: number;
           name: string;
           type: string;
+          updated_at: string | null;
         };
         Insert: {
           created_at?: string;
           id?: number;
           name: string;
           type: string;
+          updated_at?: string | null;
         };
         Update: {
           created_at?: string;
           id?: number;
           name?: string;
           type?: string;
+          updated_at?: string | null;
         };
         Relationships: [];
       };

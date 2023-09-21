@@ -14,21 +14,63 @@ The rows to replicate can be filtered by a column value.
 
 ## Installation
 
-### Step 1
-```sh
-npm install @openartmarket/supabase-live-table
+    npm install @openartmarket/supabase-live-table
+
+## Table configuration
+
+LiveTable requires a few changes to your database table to work correctly.
+
+### 1. Required columns
+
+The replicated table must have the following columns:
+
+* `id` - a primary key column that maps to a JavaScript `number` or `string` (e.g. `bigint` or `uuid`)
+* `created_at` - a timestamp column with a default value of `now()`
+* `updated_at` - a timestamp column
+* An arbitrary "filter" column of your choice. It's strongly recommended to have an index on this column.
+
+In addition to these required columns, you can have any other columns you like.
+
+For example:
+
+```sql
+create table "thing" (
+  "id" uuid primary key default uuid_generate_v4(),
+  "created_at" timestamp with time zone not null default now(),
+  "updated_at" timestamp with time zone,
+  -- our filter column
+  "type" text not null,
+  "name" text not null
+);
 ```
 
-### Step 2
-Make sure the live data table has supabase_realtime publication
+### 2. Update updated_at automatically
+
+The `updated_at` column must be updated automatically when a row is updated. This can be done with a trigger:
+
+```sql
+create extension if not exists "moddatetime" with schema "extensions";
+create trigger handle_updated_at before update on "thing"
+  for each row execute procedure moddatetime (updated_at);
+```
+
+### 3. Enable realtime
+
+Make sure the replicated table has `supabase_realtime` publication enabled:
+
 ```sql 
 drop publication if exists supabase_realtime; 
 create publication supabase_realtime; 
 -- Specify the table you're enabling realtime for 
-alter publication supabase_realtime add table "your_table";
+alter publication supabase_realtime add table "thing";
 ```
 
 ## Usage
+
+After configuring your table, you can use the `liveTable` function to replicate it in memory.
+
+The example below shows how to replicate a table called `thing` with a filter column called `type`.
+This example unsubscribes from the realtime channel once it has seen the expected records.
 
 ```typescript
 import { liveTable } from '@openartmarket/supabase-live-table'
@@ -45,7 +87,7 @@ const p = new Promise<void>((resolve, reject) => {
   const channel = liveTable<ThingRow, 'type'>(supabase, {
     // The table to replicate
     table: 'thing',
-    // The column to filter on
+    // The column to filter on. It's strongly recommended to have an index on this column.
     filterColumn: 'type',
     // The value to filter on
     filterValue: 'vehicle',

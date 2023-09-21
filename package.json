@@ -21,7 +21,8 @@
     "upgrade": "npm-check-updates --upgrade",
     "codegen": "supabase gen types typescript --local > test/Database.ts",
     "prepare": "husky install",
-    "lint-staged": "lint-staged"
+    "lint-staged": "lint-staged",
+    "format": "prettier-eslint '{src,test}/**/*.ts' --write"
   },
   "repository": "openartmarket/supabase-live-table",
   "license": "MIT",
@@ -32,11 +33,11 @@
     "@vitest/ui": "0.34.5",
     "eslint": "8.49.0",
     "eslint-config-prettier": "9.0.0",
-    "eslint-plugin-prettier": "5.0.0",
     "husky": "8.0.3",
     "lint-staged": "14.0.1",
     "npm-check-updates": "16.14.4",
-    "prettier": "3.0.3",
+    "prettier": "2.8.8",
+    "prettier-eslint-cli": "7.1.0",
     "supabase": "1.99.5",
     "typescript": "5.2.2",
     "vite": "4.4.9",
@@ -68,18 +69,12 @@
       "sourceType": "module"
     },
     "extends": [
-      "prettier",
       "eslint:recommended",
-      "plugin:@typescript-eslint/recommended"
+      "plugin:@typescript-eslint/recommended",
+      "prettier"
     ],
     "env": {
       "node": true
-    },
-    "rules": {
-      "prettier/prettier": "error"
-    },
-    "plugins": [
-      "prettier"
-    ]
+    }
   }
 }
