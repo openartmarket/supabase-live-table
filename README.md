@@ -120,19 +120,24 @@ await p
 
 ## Implementation
 
-The [Change Data Capture](https://en.wikipedia.org/wiki/Change_data_capture) algorithm works as follows:
+The [Change Data Capture](https://en.wikipedia.org/wiki/Change_data_capture) algorithm is based on
+an algorithm often used in trading systems that subscribe to market data feeds.
+
+Market data feeds typically have two different APIs - one for requesting a snapshot of the current state of the market, and another for receiving incremental updates to the market data in real-time.
+
+In LiveTable, the snapshot is simply a `SELECT` query, and the incremental updates are the Supabase Realtime messages.
+The algoritm is as follows:
 
 1. Subscribe to the Supabase Realtime channel for the table.
-2. Buffer Incoming Realtime messages in an in-memory queue.
+2. Add incoming Realtime messages to an in-memory FIFO queue.
 3. Request a snapshot (`SELECT`) once the Realtime channel is active.
 4. Apply snapshot data to the in-memory replica.
 5. Process queued Realtime messages that were received while waiting for the snapshot.
-6. Apply Realtime messages to the in-memory replica.
+6. Update the in-memory replica for every new Realtime message.
 
 ### Errors
-1. The algorithm tries to detect data inconsistency and will throw an error if it detects it.
-2. If the Realtime channel is disconnected as result of a timeout or network error. 
-3. If we stop receiving heartbeats, an error will be thrown. 
+
+If the Realtime channel is disconnected as result of a timeout or network error, the `callback` function will be called with an error.
 
 ### ⚠️⚠️⚠️ 
 

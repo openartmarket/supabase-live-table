@@ -1,7 +1,6 @@
 import { describe, it, beforeEach, expect } from 'vitest';
 import { liveTable } from '../src';
 import { SupabaseClient } from '@supabase/supabase-js';
-// From `supabase gen types typescript --local > test/Database.ts`
 import { Database } from './Database';
 
 type ThingRow = Database['public']['Tables']['thing']['Row'];
@@ -21,14 +20,14 @@ describe('liveTable', () => {
     await supabase.from('thing').delete().neq('type', '').throwOnError();
   });
 
-  it('shows an example of usage', async () => {
+  it('shows an example of usage for the README', async () => {
     // Create a promise that resolves when we've seen the expected records
     const p = new Promise<void>((resolve, reject) => {
       // Start a table replication
       const channel = liveTable<ThingRow, 'type'>(supabase, {
         // The table to replicate
         table: 'thing',
-        // The column to filter on
+        // The column to filter on. It's strongly recommended to have an index on this column.
         filterColumn: 'type',
         // The value to filter on
         filterValue: 'vehicle',

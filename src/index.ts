@@ -158,11 +158,20 @@ export class LiveTable<TableRow extends Row> implements ILiveTable<TableRow> {
   }
 
   snapshot(records: readonly TableRow[]) {
+    let snapshotTimestamp = new Date(0);
     for (const record of records) {
+      const ts = new Date(record.updated_at || record.created_at);
+      if (ts > snapshotTimestamp) {
+        snapshotTimestamp = ts;
+      }
       this.recordById.set(record.id, record);
     }
     this.buffering = false;
     for (const event of this.bufferedEvents) {
+      if (event.timestamp < snapshotTimestamp) {
+        // This event is older than the snapshot, so we can ignore it
+        continue;
+      }
       this.processEvent(event);
     }
   }
