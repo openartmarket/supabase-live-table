@@ -1,76 +1,56 @@
-import { describe, it, expect } from "vitest";
-import { ILiveTable, LiveTable, Row } from "../src";
+import { describe, it, expect } from 'vitest';
+import { ILiveTable, LiveTable, LiveTableEvent, Row } from '../src';
 
 type ThingRow = {
   id: number;
   name: string;
 };
 
-describe("LiveTable Buffering", () => {
-  it("buffers updates", async () => {
+describe('LiveTable Buffering', () => {
+  it('buffers updates', async () => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>());
 
-    lt.updated({ id: 1, name: "Un" });
-    lt.initial([{ id: 1, name: "One" }]);
+    lt.processEvent({ type: 'UPDATE', record: { id: 1, name: 'Un' } });
+    lt.snapshot([{ id: 1, name: 'One' }]);
 
-    expect(lt.records).toEqual([{ id: 1, name: "Un" }]);
+    expect(lt.records).toEqual([{ id: 1, name: 'Un' }]);
   });
 
-  it("buffers deletes", async () => {
+  it('buffers deletes', async () => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>());
 
     console.log(`LiveTable->>+Supabase: subscribe()`);
     console.log(`Supabase-->>-LiveTable: subscribed()`);
-    lt.deleted({ id: 1 });
+    lt.processEvent({ type: 'DELETE', record: { id: 1 } });
     console.log(`LiveTable->>+Supabase: snaphot()`);
-    lt.initial([{ id: 1, name: "One" }]);
+    lt.snapshot([{ id: 1, name: 'One' }]);
 
     expect(lt.records).toEqual([]);
 
     console.log(JSON.stringify(lt.records, null, 2));
   });
 
-  it("buffers inserts", async () => {
+  it('buffers inserts', async () => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>());
 
-    lt.inserted({ id: 1, name: "Un" });
-    lt.initial([{ id: 1, name: "One" }]);
+    lt.processEvent({ type: 'INSERT', record: { id: 1, name: 'Un' } });
+    lt.snapshot([{ id: 1, name: 'One' }]);
 
-    expect(lt.records).toEqual([{ id: 1, name: "Un" }]);
+    expect(lt.records).toEqual([{ id: 1, name: 'Un' }]);
   });
 });
 
-export class MermaidLiveTable<TableRow extends Row>
-  implements ILiveTable<TableRow>
-{
+export class MermaidLiveTable<TableRow extends Row> implements ILiveTable<TableRow> {
   constructor(private readonly delegate: ILiveTable<TableRow>) {}
 
-  initial(records: readonly TableRow[]) {
-    console.log(
-      `Supabase-->>-LiveTable: initial( ${JSON.stringify(records.map(p))} )`,
-    );
-    this.delegate.initial(records);
+  snapshot(records: readonly TableRow[]) {
+    console.log(`LiveTable->>+Supabase: snaphot( ${JSON.stringify(records.map(p))} )`);
+    this.delegate.snapshot(records);
   }
 
-  inserted(record: TableRow) {
-    console.log(
-      `Supabase-->>LiveTable: inserted( ${JSON.stringify(p(record))} )`,
-    );
-    this.delegate.inserted(record);
-  }
-
-  updated(record: TableRow) {
-    console.log(
-      `Supabase-->>LiveTable: updated( ${JSON.stringify(p(record))} )`,
-    );
-    this.delegate.updated(record);
-  }
-
-  deleted(record: Partial<TableRow>) {
-    console.log(
-      `Supabase-->>LiveTable: deleted( ${JSON.stringify(p(record))} )`,
-    );
-    this.delegate.deleted(record);
+  processEvent(event: LiveTableEvent<TableRow>) {
+    console.log(`LiveTable->>-Supabase: processEvent( ${JSON.stringify(event)} )`);
+    this.delegate.processEvent(event);
   }
 
   get records(): readonly TableRow[] {

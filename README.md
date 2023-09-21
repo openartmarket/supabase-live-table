@@ -51,7 +51,7 @@ const p = new Promise<void>((resolve, reject) => {
     filterValue: 'vehicle',
     // The name of the channel to subscribe to
     channelName: 'thing:vehicle',
-    // This callback is called for every change to the table
+    // This callback is called for every change to the table, or if an error occurs
     callback: (err, records) => {
       if (err) return reject(err)
       // Check that we've seen the expected records, which is just one record with name 'bike' and type 'vehicle'
@@ -93,20 +93,8 @@ The [Change Data Capture](https://en.wikipedia.org/wiki/Change_data_capture) alg
 3. If we stop receiving heartbeats, an error will be thrown. 
 
 ### ⚠️⚠️⚠️ 
-Automatic reconnection is *not* handled and must be implemented by the caller.
 
-## Testing this library
-Ensure you have a supabase database running locally and have set the following environment variables
-```sh
-export SUPABASE_URL="http://localhost:50321"
-export SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
-```
-Variables might be different depending on your local setup
-  
-Then run
-```sh
-  npm t
-```
+Automatic reconnection is out of scope of this library and must be implemented by the caller - typically when the `callback` function is called with an error.
 
 ## Examples
 
