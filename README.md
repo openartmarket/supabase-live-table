@@ -129,6 +129,20 @@ Replica:
 []
 ```
 
+## Testing
+
+There are two test suites for this library:
+
+* [test/liveTable.test.ts](test/liveTable.test.ts) integration test for the `liveTable` function.
+* [test/liveTableBuffering.test.ts](test/liveTableBuffering.test.ts) unit tests for concurrency.
+
+It's not possible to reliably test the concurrency of the `liveTable` function, so the unit tests are a best effort attempt to test the concurrency of the buffering algorithm.
+
+The unit tests simulate various concurrency scenarios by interacting directly with the internal `LiveTable` class.
+These tests also generate [mermaid sequence diagrams](https://mermaid.js.org/syntax/sequenceDiagram.html) that show the order of events for each scenario, as well as the final state of the in-memory replica.
+
+Documenting a system like this is called [living documentation](https://www.amazon.co.uk/Living-Documentation-Cyrille-Martraire/dp/0134689321) and is a great way to keep the documentation up to date.
+
 ## License
 
 MIT © [Open Art Market](https://openartmarket.com)
