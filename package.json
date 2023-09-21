@@ -26,10 +26,10 @@
   "repository": "openartmarket/supabase-live-table",
   "license": "MIT",
   "devDependencies": {
-    "@supabase/supabase-js": "2.33.2",
+    "@supabase/supabase-js": "2.36.0",
     "@typescript-eslint/eslint-plugin": "6.7.2",
     "@typescript-eslint/parser": "6.7.2",
-    "@vitest/ui": "0.34.4",
+    "@vitest/ui": "0.34.5",
     "eslint": "8.49.0",
     "eslint-config-prettier": "9.0.0",
     "eslint-plugin-prettier": "5.0.0",
@@ -40,7 +40,7 @@
     "supabase": "1.99.5",
     "typescript": "5.2.2",
     "vite": "4.4.9",
-    "vitest": "0.34.4"
+    "vitest": "0.34.5"
   },
   "prettier": {
     "printWidth": 100,
@@ -50,12 +50,10 @@
   },
   "lint-staged": {
     "*.ts": [
-      "eslint --quiet --fix",
-      "git add"
+      "eslint --quiet --fix"
     ],
-    "*.json": [
-      "prettier --write",
-      "git add"
+    "*.{json,ts}": [
+      "prettier --write"
     ]
   },
   "husky": {
@@ -70,9 +68,9 @@
       "sourceType": "module"
     },
     "extends": [
+      "prettier",
       "eslint:recommended",
-      "plugin:@typescript-eslint/recommended",
-      "prettier"
+      "plugin:@typescript-eslint/recommended"
     ],
     "env": {
       "node": true

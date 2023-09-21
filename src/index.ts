@@ -71,13 +71,12 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
         },
       )
       .subscribe((status) => {
-        // console.log("SUBSCRIPTION: " + status);
         const ERROR_STATES: `${REALTIME_SUBSCRIBE_STATES}`[] = [
           REALTIME_SUBSCRIBE_STATES.TIMED_OUT,
           REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
         ];
         if (ERROR_STATES.includes(status)) {
-          callback(new Error('SUBSCRIPTION: ' + status), []);
+          callback(new Error(`SUBSCRIPTION: ${status}`), []);
         }
       })
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
