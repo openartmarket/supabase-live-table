@@ -14,9 +14,17 @@ The rows to replicate can be filtered by a column value.
 
 ## Installation
 
+### Step 1
 ```sh
 npm install @openartmarket/supabase-live-table
 ```
+
+### Step 2
+Copy and modify the [migrations.sql file](./supabase/migrations/20230919104332_initial-schema.sql) to create or update the table you want live data for in your database.
+
+After you are done, reset your supabase database with the new migration.sql file to apply changes
+
+
 
 ## Usage
 
@@ -77,9 +85,13 @@ The [Change Data Capture](https://en.wikipedia.org/wiki/Change_data_capture) alg
 5. Process queued Realtime messages that were received while waiting for the snapshot.
 6. Apply Realtime messages to the in-memory replica.
 
-The algorithm tries to detect data inconsistency and will throw an error if it detects it.
-If the Realtime channel is disconnected as result of a timeout or network error, or if we stop receiving heartbeats,
-an error will be thrown. Automatic reconnection is *not* handled and must be implemented by the caller.
+### Errors
+1. The algorithm tries to detect data inconsistency and will throw an error if it detects it.
+2. If the Realtime channel is disconnected as result of a timeout or network error. 
+3. If we stop receiving heartbeats, an error will be thrown. 
+
+### ⚠️⚠️⚠️ 
+Automatic reconnection is *not* handled and must be implemented by the caller.
 
 ## Examples
 

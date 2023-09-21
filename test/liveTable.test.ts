@@ -8,8 +8,8 @@ type ThingRow = Database["public"]["Tables"]["thing"]["Row"];
 
 describe("liveTable", () => {
   const supabase = new SupabaseClient<Database>(
-    "http://localhost:50321",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU",
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY,
     {
       auth: {
         persistSession: false,
