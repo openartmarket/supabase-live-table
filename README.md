@@ -4,7 +4,7 @@ In-memory replication of a Postgres table, synchronized with [Supabase Realtime]
 
 ## Motivation
 
-At [Open Art Market](https://www.openartmarket.com) we provide a marketplace where people can buy and sell shares in physical artworks.
+At [Open Art Market](https://openartmarket.com) we provide a marketplace where people can buy and sell shares in physical artworks.
 
 All buy/sell orders are stored in Supabase, and we needed a reliable way to display the current state of the order book in real-time.
 
@@ -30,8 +30,8 @@ The replicated table must have the following columns:
 
 * `id` - a primary key column that maps to a JavaScript `number` or `string` (e.g. `bigint` or `uuid`)
 * `created_at` - a timestamp column with a default value of `now()`
-* `updated_at` - a timestamp column
-* An arbitrary "filter" column of your choice. It's strongly recommended to have an index on this column.
+* `updated_at` - a timestamp column that is updated automatically when a row is updated (more about this below)
+* An arbitrary *filter column* of your choice to filter what rows to replicate. It's strongly recommended to have an index on this column.
 
 In addition to these required columns, you can have any other columns you like.
 
@@ -58,7 +58,7 @@ create trigger handle_updated_at before update on "thing"
   for each row execute procedure moddatetime (updated_at);
 ```
 
-The `created_at` and `updated_at` columns are used to determine whether or not to apply a change to the in-memory replica. We skip changes that were made before the snapshot was taken.
+The `created_at` and `updated_at` columns are used to determine whether or not to apply a change to the in-memory replica.
 
 ### 3. Enable realtime
 
@@ -138,14 +138,14 @@ The algoritm is as follows:
 2. Add incoming Realtime messages to an in-memory FIFO queue.
 3. Request a snapshot (`SELECT`) once the Realtime channel is active.
 4. Apply snapshot data to the in-memory replica.
-5. Process queued Realtime messages that were received while waiting for the snapshot.
+5. Process queued Realtime messages that were received while waiting for the snapshot. Skip messages that are older than the snapshot.
 6. Update the in-memory replica for every new Realtime message.
 
 ### Errors
 
 If the Realtime channel is disconnected as result of a timeout or network error, the `callback` function will be called with an error.
 
-### ⚠️⚠️⚠️ 
+### ⚠️⚠️⚠️ Reconnection is out of scope ⚠️⚠️⚠️ 
 
 Automatic reconnection is out of scope of this library and must be implemented by the caller - typically when the `callback` function is called with an error.
 
