@@ -136,8 +136,7 @@ export class MermaidLiveTable implements ILiveTable<ThingRow> {
 
   processEvent(event: LiveTableEvent<ThingRow>) {
     const { type, record } = event;
-    const { id, name } = record;
-    this.fileStream.write(`  Supabase-->>LiveTable: ${type} ${JSON.stringify({ id, name })}\n`);
+    this.fileStream.write(`  Supabase-->>LiveTable: ${type} ${JSON.stringify(p(record))}\n`);
     this.delegate.processEvent(event);
   }
 

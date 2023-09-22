@@ -6,7 +6,7 @@ sequenceDiagram
   Supabase->>-LiveTable: subscription active
   LiveTable->>+Supabase: get snapshot
   Supabase->>-LiveTable: snaphot: [{"id":1,"name":"Bicycle","type":"vehicle"}]
-  Supabase-->>LiveTable: UPDATE {"id":1,"name":"Bike"}
+  Supabase-->>LiveTable: UPDATE {"id":1,"name":"Bike","type":"vehicle"}
 ```
 
 ### replica
