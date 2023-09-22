@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "outDir": "dist/esm",
+    "target": "ESNext",
+    "module": "ESNext",
+    "strict": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "pretty": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "downlevelIteration": true,
+    "lib": ["ESNext"]
+  },
+  "exclude": ["dist", "node_modules"]
+}

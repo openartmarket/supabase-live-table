@@ -158,7 +158,7 @@ describe('liveTable', () => {
               })
               .catch(reject);
           } catch (err) {
-            error = err;
+            error = err as Error;
           }
           if (subscribed) {
             subscribed().catch(reject);
