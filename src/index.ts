@@ -6,18 +6,21 @@ import {
 } from '@supabase/supabase-js';
 
 type ID = string | number;
-export type Row = Record<string, unknown> & {
+export type LiveRow = Record<string, unknown> & {
   id: ID;
   created_at: string;
   updated_at: string | null;
 };
 
-export type LiveTableCallback<TableRow> = (
+export type LiveTableCallback<TableRow extends LiveRow> = (
   err: Error | undefined,
   records: readonly TableRow[],
 ) => void;
 
-export type LiveTableParams<TableRow, ColumnName extends keyof TableRow & string> = {
+export type LiveTableParams<
+  TableRow extends LiveRow,
+  ColumnName extends keyof TableRow & string,
+> = {
   table: string;
   filterColumn: ColumnName;
   filterValue: TableRow[ColumnName];
@@ -25,7 +28,7 @@ export type LiveTableParams<TableRow, ColumnName extends keyof TableRow & string
   callback: LiveTableCallback<TableRow>;
 };
 
-export function liveTable<TableRow extends Row, ColumnName extends keyof TableRow & string>(
+export function liveTable<TableRow extends LiveRow, ColumnName extends keyof TableRow & string>(
   supabase: SupabaseClient,
   params: LiveTableParams<TableRow, ColumnName>,
 ): RealtimeChannel {
@@ -51,7 +54,7 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
           filter: `${columnName}=eq.${columnValue}`,
         },
         (payload: RealtimePostgresChangesPayload<TableRow>) => {
-          const timestamp = new Date(payload.commit_timestamp);
+          const timestamp = payload.commit_timestamp;
           switch (payload.eventType) {
             case 'INSERT': {
               liveTable.processEvent({ type: 'INSERT', record: payload.new, timestamp });
@@ -99,33 +102,36 @@ export function liveTable<TableRow extends Row, ColumnName extends keyof TableRo
   );
 }
 
-type Insert<TableRow> = {
+type Insert<TableRow extends LiveRow> = {
   type: 'INSERT';
   record: TableRow;
-  timestamp: Date;
+  timestamp: string;
 };
 
-type Update<TableRow> = {
+type Update<TableRow extends LiveRow> = {
   type: 'UPDATE';
   record: TableRow;
-  timestamp: Date;
+  timestamp: string;
 };
 
-type Delete<TableRow> = {
+type Delete<TableRow extends LiveRow> = {
   type: 'DELETE';
   record: Partial<TableRow>;
-  timestamp: Date;
+  timestamp: string;
 };
 
-export type LiveTableEvent<TableRow> = Insert<TableRow> | Update<TableRow> | Delete<TableRow>;
+export type LiveTableEvent<TableRow extends LiveRow> =
+  | Insert<TableRow>
+  | Update<TableRow>
+  | Delete<TableRow>;
 
-export type ILiveTable<TableRow extends Row> = {
+export type ILiveTable<TableRow extends LiveRow> = {
   snapshot(records: readonly TableRow[]): void;
   processEvent(event: LiveTableEvent<TableRow>): void;
   readonly records: readonly TableRow[];
 };
 
-export class LiveTable<TableRow extends Row> implements ILiveTable<TableRow> {
+export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow> {
   private readonly recordById = new Map<ID, TableRow>();
   private buffering = true;
   private readonly bufferedEvents: LiveTableEvent<TableRow>[] = [];
@@ -136,9 +142,17 @@ export class LiveTable<TableRow extends Row> implements ILiveTable<TableRow> {
       return;
     }
 
-    const { type, record } = event;
+    const { type, record } = validate(event);
     switch (type) {
       case 'INSERT': {
+        if (this.recordById.has(record.id)) {
+          const existing = this.recordById.get(record.id);
+          throw new Error(
+            `Conflicting insert. We already have ${JSON.stringify(
+              existing,
+            )} from a snapshot. Cannot insert ${JSON.stringify(record)}`,
+          );
+        }
         this.recordById.set(record.id, record);
         break;
       }
@@ -168,7 +182,8 @@ export class LiveTable<TableRow extends Row> implements ILiveTable<TableRow> {
     }
     this.buffering = false;
     for (const event of this.bufferedEvents) {
-      if (event.timestamp < snapshotTimestamp) {
+      const eventTimestamp = new Date(event.timestamp);
+      if (eventTimestamp < snapshotTimestamp) {
         // This event is older than the snapshot, so we can ignore it
         continue;
       }
@@ -179,4 +194,21 @@ export class LiveTable<TableRow extends Row> implements ILiveTable<TableRow> {
   get records(): readonly TableRow[] {
     return [...this.recordById.values()];
   }
+}
+
+function validate<TableRow extends LiveRow>(
+  event: LiveTableEvent<TableRow>,
+): LiveTableEvent<TableRow> {
+  const { timestamp, record } = event;
+  const eventTimestamp = new Date(timestamp);
+  if (!record.created_at) {
+    throw new Error(`Record has no created_at: ${JSON.stringify(record)}`);
+  }
+  const recordTimestamp = new Date(record.updated_at || record.created_at);
+  if (eventTimestamp < recordTimestamp) {
+    throw new Error(
+      `Event timestamp ${timestamp} is older than record timestamp ${recordTimestamp}`,
+    );
+  }
+  return event;
 }

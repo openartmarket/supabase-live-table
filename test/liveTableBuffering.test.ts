@@ -1,19 +1,58 @@
 import { describe, it, expect } from 'vitest';
-import { ILiveTable, LiveTable, LiveTableEvent, Row } from '../src';
+import { ILiveTable, LiveTable, LiveTableEvent, LiveRow } from '../src';
 
-type ThingRow = {
+type ThingRow = LiveRow & {
   id: number;
   name: string;
 };
 
+const t1 = '2023-09-21T22:28:00.00Z';
+const t2 = '2023-09-21T22:28:00.01Z';
+const t3 = '2023-09-21T22:28:00.02Z';
+
 describe('LiveTable Buffering', () => {
-  it('buffers updates', async () => {
+  it('replays events that arrived after snapshots', async () => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>());
 
-    lt.processEvent({ type: 'UPDATE', record: { id: 1, name: 'Un' } });
-    lt.snapshot([{ id: 1, name: 'One' }]);
+    const streamRecord: ThingRow = {
+      id: 1,
+      created_at: t2,
+      updated_at: t3,
+      name: 'Un',
+    };
+    lt.processEvent({ timestamp: t3, type: 'UPDATE', record: streamRecord });
 
-    expect(lt.records).toEqual([{ id: 1, name: 'Un' }]);
+    const snapshotRecord = {
+      id: 1,
+      created_at: t1,
+      updated_at: t2,
+      name: 'One',
+    };
+    lt.snapshot([snapshotRecord]);
+
+    expect(lt.records).toEqual([streamRecord]);
+  });
+
+  it('skips events that predate the snapshot', async () => {
+    const lt = new MermaidLiveTable(new LiveTable<ThingRow>());
+
+    const streamRecord: ThingRow = {
+      id: 1,
+      created_at: t1,
+      updated_at: t2,
+      name: 'Un',
+    };
+    lt.processEvent({ timestamp: t2, type: 'UPDATE', record: streamRecord });
+
+    const snapshotRecord: ThingRow = {
+      id: 1,
+      created_at: t2,
+      updated_at: t3,
+      name: 'One',
+    };
+    lt.snapshot([snapshotRecord]);
+
+    expect(lt.records).toEqual([snapshotRecord]);
   });
 
   it('buffers deletes', async () => {
@@ -21,26 +60,25 @@ describe('LiveTable Buffering', () => {
 
     console.log(`LiveTable->>+Supabase: subscribe()`);
     console.log(`Supabase-->>-LiveTable: subscribed()`);
-    lt.processEvent({ type: 'DELETE', record: { id: 1 } });
+    lt.processEvent({ timestamp: t2, type: 'DELETE', record: { id: 1, created_at: t2 } });
     console.log(`LiveTable->>+Supabase: snaphot()`);
-    lt.snapshot([{ id: 1, name: 'One' }]);
+    lt.snapshot([{ created_at: t1, updated_at: null, id: 1, name: 'One' }]);
 
     expect(lt.records).toEqual([]);
 
     console.log(JSON.stringify(lt.records, null, 2));
   });
 
-  it('buffers inserts', async () => {
+  it('detects conflicting inserts', async () => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>());
 
-    lt.processEvent({ type: 'INSERT', record: { id: 1, name: 'Un' } });
-    lt.snapshot([{ id: 1, name: 'One' }]);
-
-    expect(lt.records).toEqual([{ id: 1, name: 'Un' }]);
+    const record = { id: 1, created_at: t1, updated_at: null, name: 'Un' };
+    lt.processEvent({ timestamp: t1, type: 'INSERT', record });
+    expect(() => lt.snapshot([record])).toThrowError(/Conflicting insert/);
   });
 });
 
-export class MermaidLiveTable<TableRow extends Row> implements ILiveTable<TableRow> {
+export class MermaidLiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow> {
   constructor(private readonly delegate: ILiveTable<TableRow>) {}
 
   snapshot(records: readonly TableRow[]) {
@@ -58,6 +96,6 @@ export class MermaidLiveTable<TableRow extends Row> implements ILiveTable<TableR
   }
 }
 
-function p({ id, name }: Partial<Row>) {
+function p({ id, name }: Partial<LiveRow>) {
   return { id, name };
 }
