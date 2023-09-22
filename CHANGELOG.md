@@ -1,0 +1,14 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
+and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+### Added
+- First version of the project
+
+
+[Unreleased]: https://github.com/rcmachado/changelog/compare/0.0.0...HEAD
+[0.0.0]: https://github.com/rcmachado/changelog/compare/c8e05ac2a36f3875d5e9f8a9f25b5ae66e3cf5fc...0.0.0
