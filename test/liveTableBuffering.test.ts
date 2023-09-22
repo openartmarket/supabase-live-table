@@ -16,6 +16,10 @@ describe('LiveTable Buffering', () => {
   it('skips events that predate the snapshot', async (test) => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>(), test.task.name);
 
+    lt.subscribe();
+    lt.subscribed();
+    lt.requestSnapshot();
+
     const streamRecord: ThingRow = {
       id: 1,
       created_at: t1,
@@ -30,7 +34,7 @@ describe('LiveTable Buffering', () => {
       updated_at: t3,
       name: 'One',
     };
-    lt.snapshot([snapshotRecord]);
+    lt.processSnapshot([snapshotRecord]);
 
     expect(lt.records).toEqual([snapshotRecord]);
 
@@ -40,6 +44,18 @@ describe('LiveTable Buffering', () => {
   it('replays updates that arrived after the snapshot', async (test) => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>(), test.task.name);
 
+    lt.subscribe();
+    lt.subscribed();
+    lt.requestSnapshot();
+
+    const snapshotRecord = {
+      id: 1,
+      created_at: t1,
+      updated_at: t2,
+      name: 'One',
+    };
+    lt.processSnapshot([snapshotRecord]);
+
     const streamRecord: ThingRow = {
       id: 1,
       created_at: t2,
@@ -48,27 +64,20 @@ describe('LiveTable Buffering', () => {
     };
     lt.processEvent({ timestamp: t3, type: 'UPDATE', record: streamRecord });
 
-    const snapshotRecord = {
-      id: 1,
-      created_at: t1,
-      updated_at: t2,
-      name: 'One',
-    };
-    lt.snapshot([snapshotRecord]);
-
     expect(lt.records).toEqual([streamRecord]);
 
     await lt.close();
   });
 
-  it('replays delets that arrived after the snapshot', async (test) => {
+  it('replays deletes that arrived after the snapshot', async (test) => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>(), test.task.name);
 
-    lt.write(`  LiveTable->>+Supabase: subscribe()\n`);
-    lt.write(`  Supabase-->>-LiveTable: subscribed()\n`);
-    lt.processEvent({ timestamp: t2, type: 'DELETE', record: { id: 1, created_at: t2 } });
-    lt.write(`  LiveTable->>+Supabase: snaphot()\n`);
-    lt.snapshot([{ created_at: t1, updated_at: null, id: 1, name: 'One' }]);
+    lt.subscribe();
+    lt.subscribed();
+    lt.requestSnapshot();
+    lt.processSnapshot([{ created_at: t1, updated_at: null, id: 1, name: 'One' }]);
+
+    lt.processEvent({ timestamp: t2, type: 'DELETE', record: { id: 1 } });
 
     expect(lt.records).toEqual([]);
 
@@ -80,7 +89,7 @@ describe('LiveTable Buffering', () => {
 
     const record = { id: 1, created_at: t1, updated_at: null, name: 'Un' };
     lt.processEvent({ timestamp: t2, type: 'INSERT', record: { ...record, created_at: t2 } });
-    expect(() => lt.snapshot([record])).toThrowError(/Conflicting insert/);
+    expect(() => lt.processSnapshot([record])).toThrowError(/Conflicting insert/);
   });
 
   it('ignores conflicting inserts when the timestamps are identical', async () => {
@@ -88,7 +97,7 @@ describe('LiveTable Buffering', () => {
 
     const record = { id: 1, created_at: t1, updated_at: null, name: 'Un' };
     lt.processEvent({ timestamp: t1, type: 'INSERT', record });
-    lt.snapshot([record]);
+    lt.processSnapshot([record]);
     expect(lt.records).toEqual([record]);
   });
 });
@@ -104,20 +113,32 @@ export class MermaidLiveTable<TableRow extends LiveRow> implements ILiveTable<Ta
     this.fileStream.write('sequenceDiagram\n');
   }
 
-  snapshot(records: readonly TableRow[]) {
-    this.fileStream.write(
-      `  LiveTable->>+Supabase: snaphot( ${JSON.stringify(records.map(p))} )\n`,
-    );
-    this.delegate.snapshot(records);
+  processSnapshot(records: readonly TableRow[]) {
+    this.fileStream.write(`  Supabase->>-LiveTable: snaphot: ${JSON.stringify(records.map(p))}\n`);
+    this.delegate.processSnapshot(records);
   }
 
   processEvent(event: LiveTableEvent<TableRow>) {
-    this.fileStream.write(`  LiveTable->>-Supabase: processEvent( ${JSON.stringify(event)} )\n`);
+    const { type, record } = event;
+    const { id, name } = record;
+    this.fileStream.write(`  Supabase-->>LiveTable: ${type} ${JSON.stringify({ id, name })}\n`);
     this.delegate.processEvent(event);
   }
 
   get records(): readonly TableRow[] {
     return this.delegate.records;
+  }
+
+  subscribe() {
+    this.write(`  LiveTable->>+Supabase: subscribe\n`);
+  }
+
+  subscribed() {
+    this.write(`  Supabase->>-LiveTable: subscription active\n`);
+  }
+
+  requestSnapshot() {
+    this.write(`  LiveTable->>+Supabase: get snapshot\n`);
   }
 
   async write(text: string) {

@@ -93,7 +93,7 @@ export function liveTable<TableRow extends LiveRow, ColumnName extends keyof Tab
               if (error) {
                 callback(new Error(error.message), []);
               } else {
-                liveTable.snapshot(data);
+                liveTable.processSnapshot(data);
                 callback(undefined, liveTable.records);
               }
             });
@@ -126,7 +126,7 @@ export type LiveTableEvent<TableRow extends LiveRow> =
   | Delete<TableRow>;
 
 export type ILiveTable<TableRow extends LiveRow> = {
-  snapshot(records: readonly TableRow[]): void;
+  processSnapshot(records: readonly TableRow[]): void;
   processEvent(event: LiveTableEvent<TableRow>): void;
   readonly records: readonly TableRow[];
 };
@@ -178,7 +178,7 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
     }
   }
 
-  snapshot(records: readonly TableRow[]) {
+  processSnapshot(records: readonly TableRow[]) {
     let snapshotTimestamp = new Date(0);
     for (const record of records) {
       const recordTimestamp = new Date(record.updated_at || record.created_at);
