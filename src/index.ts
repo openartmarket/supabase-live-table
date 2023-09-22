@@ -159,6 +159,9 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
         break;
       }
       case 'UPDATE': {
+        if (!this.recordById.has(record.id)) {
+          throw new Error(`Cannot update. Record does not exist: ${JSON.stringify(record)}`);
+        }
         this.recordById.set(record.id, record);
         break;
       }
@@ -193,6 +196,10 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
     }
   }
 
+  /**
+   * Returns the replica of the table as an array of records.
+   * The records are not sorted, and there is no guarantee of order.
+   */
   get records(): readonly TableRow[] {
     return [...this.recordById.values()];
   }
