@@ -4,17 +4,17 @@ In-memory replication of a Postgres table, synchronized with [Supabase Realtime]
 
 ## Motivation
 
-At [Open Art Market](https://openartmarket.com) we provide a marketplace where people can buy and sell shares in physical artworks.
-
-All buy/sell orders are stored in Supabase, and we needed a reliable way to display the current state of the order book in real-time.
-
 Supabase Realtime provides low-level primitives for receiving notifications of changes to a table, but it does not provide a way to keep a replica of the table in memory. This library provides a way to do that.
+
+![Supabase Live Table](docs/supabase-live-table.png)
+
+We use Supabase Live Table at [Open Art Market](https://openartmarket.com) to provide a real-time order book for our art marketplace.
 
 ## Overview
 
 Supabase Live Table provides one function (`liveTable`) that replicates a Postgres table in memory, and keeps it up to date with changes to the table in real-time. It uses [Supabase Realtime](https://supabase.com/docs/guides/realtime) to receive notifications of changes to the table, and then updates its in-memory read only replica.
 
-The rows to replicate can be filtered by a column value.
+The rows to replicate can be filtered by a column value. Supabase Live Table first fetches a snapshot of the table, and then applies incremental updates to the in-memory replica. It handles all the edge cases of concurrent updates to the table, and guarantees that the in-memory replica is always consistent with the table.
 
 ## Installation
 
