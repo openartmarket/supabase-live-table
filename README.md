@@ -145,27 +145,6 @@ If the Realtime channel is disconnected as result of a timeout or network error,
 
 Automatic reconnection is out of scope of this library and must be implemented by the caller - typically when the `callback` function is called with an error.
 
-## Examples
-
-The sequence diagrams below show the order of events for the different scenarios, and the final state of the in-memory replica.
-
-### Buffered deletes
-
-```mermaid
-sequenceDiagram
-  LiveTable->>+Supabase: subscribe()
-  Supabase-->>-LiveTable: subscribed()
-  Supabase-->>LiveTable: deleted( {"id":1} )
-  LiveTable->>+Supabase: snaphot()
-  Supabase-->>-LiveTable: initial( [{"id":1,"name":"One"}] )
-```
-
-Replica:
-
-```json
-[]
-```
-
 ## Testing
 
 There are two test suites for this library:
@@ -176,7 +155,7 @@ There are two test suites for this library:
 It's not possible to reliably test the concurrency of the `liveTable` function, so the unit tests are a best effort attempt to test the concurrency of the buffering algorithm.
 
 The unit tests simulate various concurrency scenarios by interacting directly with the internal `LiveTable` class.
-These tests also generate [mermaid sequence diagrams](https://mermaid.js.org/syntax/sequenceDiagram.html) that show the order of events for each scenario, as well as the final state of the in-memory replica.
+These tests also generate [mermaid sequence diagrams](/docs) that show the order of events for each scenario, as well as the final state of the in-memory replica.
 
 Documenting a system like this is called [living documentation](https://www.amazon.co.uk/Living-Documentation-Cyrille-Martraire/dp/0134689321) and is a great way to keep the documentation up to date.
 
