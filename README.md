@@ -54,6 +54,8 @@ create trigger handle_updated_at before update on "thing"
   for each row execute procedure moddatetime (updated_at);
 ```
 
+The `created_at` and `updated_at` columns are used to determine whether or not to apply a change to the in-memory replica. We skip changes that were made before the snapshot was taken.
+
 ### 3. Enable realtime
 
 Make sure the replicated table has `supabase_realtime` publication enabled:
