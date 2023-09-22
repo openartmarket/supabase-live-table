@@ -15,6 +15,7 @@ jobs:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: package-lock.json
+      - run: npm ci
       - uses: cucumber/action-publish-npm@v1.1.1
         with:
           npm-token: ${{ secrets.NPM_TOKEN }}
