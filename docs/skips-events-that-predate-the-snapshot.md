@@ -1,4 +1,5 @@
 ### skips events that predate the snapshot
+
 ```mermaid
 sequenceDiagram
   LiveTable->>+Supabase: subscribe
@@ -8,6 +9,7 @@ sequenceDiagram
   Supabase->>-LiveTable: snaphot: [{"id":1,"name":"Bicycle","type":"vehicle"}]
 ```
 
+### replica
 ```json
 [
   {

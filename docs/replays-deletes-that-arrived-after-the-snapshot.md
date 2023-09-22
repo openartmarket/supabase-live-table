@@ -1,4 +1,5 @@
 ### replays deletes that arrived after the snapshot
+
 ```mermaid
 sequenceDiagram
   LiveTable->>+Supabase: subscribe
@@ -8,6 +9,7 @@ sequenceDiagram
   Supabase-->>LiveTable: DELETE {"id":1}
 ```
 
+### replica
 ```json
 []
 ```

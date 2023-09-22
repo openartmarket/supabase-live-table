@@ -124,7 +124,7 @@ export class MermaidLiveTable implements ILiveTable<ThingRow> {
   constructor(private readonly delegate: ILiveTable<ThingRow>, name: string) {
     const path = `./docs/${name.toLowerCase().replace(/\s/g, '-')}.md`;
     this.fileStream = fs.createWriteStream(path, 'utf-8');
-    this.fileStream.write(`### ${name}\n`);
+    this.fileStream.write(`### ${name}\n\n`);
     this.fileStream.write('```mermaid\n');
     this.fileStream.write('sequenceDiagram\n');
   }
@@ -164,6 +164,7 @@ export class MermaidLiveTable implements ILiveTable<ThingRow> {
   async close() {
     return new Promise((resolve) => {
       this.fileStream.write('```\n\n');
+      this.fileStream.write('### replica\n');
       this.fileStream.write('```json\n');
       const records = this.records.map((thing) => p(thing));
       this.fileStream.write(JSON.stringify(records, null, 2));

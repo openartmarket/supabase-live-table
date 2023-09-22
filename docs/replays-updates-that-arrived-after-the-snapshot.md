@@ -1,4 +1,5 @@
 ### replays updates that arrived after the snapshot
+
 ```mermaid
 sequenceDiagram
   LiveTable->>+Supabase: subscribe
@@ -8,6 +9,7 @@ sequenceDiagram
   Supabase-->>LiveTable: UPDATE {"id":1,"name":"Bike"}
 ```
 
+### replica
 ```json
 [
   {
