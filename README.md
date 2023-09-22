@@ -5,19 +5,23 @@ In-memory replication of a Postgres table, synchronized with [Supabase Realtime]
 ## Motivation
 
 Some applications need a replica of a table in memory, and keep it up to date with changes to the table in real-time.
-While It uses [Supabase Realtime](https://supabase.com/docs/guides/realtime) provides low-level primitives for receiving notifications of changes to a table, it requires additional logic to keep a replica of the table in memory.
+[Supabase Realtime](https://supabase.com/docs/guides/realtime) provides low-level primitives for receiving notifications of changes to a table, but it requires additional complicated logic to keep an exact replica of the table in memory.
 
-Supabase Live Table builds on top of Supabase Realtime to provide a local memory replica of a table that stays in sync with changes to the table in real-time.
+Supabase Live Table provides a read-only replication mechanism that builds on top of Supabase Realtime.
+This replica stays in sync with changes to the table in real-time.
 
 ![Supabase Live Table](docs/supabase-live-table.png)
 
-We use Supabase Live Table at [Open Art Market](https://openartmarket.com) to provide a real-time order book for our art marketplace.
+### In the wild
+
+* [Open Art Market](https://openartmarket.com) uses Supabase Live Table to provide a real-time order book for its art marketplace.
+* *Maybe your project? Send us a pull request!*
 
 ## Overview
 
-Supabase Live Table provides one function (`liveTable`) that initializes the table replication.
+Supabase Live Table provides a (`liveTable`) function that initializes the table replication.
 
-The rows to replicate are filtered by a column value. Supabase Live Table first fetches a snapshot of the table, and then applies incremental updates to the in-memory replica. It handles all the edge cases of concurrent updates to the table, and guarantees that the in-memory replica stays consistent with the table.
+The rows to replicate are filtered by a column value. Supabase Live Table first fetches a snapshot of the table, and then applies incremental updates to the in-memory replica. It handles edge cases of concurrent updates to the table, and guarantees that the in-memory replica stays consistent with the table.
 
 ## Installation
 
@@ -80,11 +84,16 @@ create table "thing" (
   "type" text not null,
   "name" text not null
 );
+
+create unique index thing_pkey ON public.thing USING btree (id);
+-- Create an index on the filter column
+create index thing_type_idx ON public.thing USING btree (type);
+
 ```
 
 ### 2. Update updated_at automatically
 
-The `updated_at` column must be updated automatically when a row is updated. This can be done with a trigger:
+The replication algorithm requires `updated_at` to be updated automatically when a row is updated. This can be done with a trigger:
 
 ```sql
 create extension if not exists "moddatetime" with schema "extensions";
@@ -92,7 +101,7 @@ create trigger handle_updated_at before update on "thing"
   for each row execute procedure moddatetime (updated_at);
 ```
 
-The `created_at` and `updated_at` columns are used to determine whether or not to apply a change to the in-memory replica.
+With this in place, the `updated_at` column will be updated automatically when a row is updated.
 
 ### 3. Enable realtime
 
