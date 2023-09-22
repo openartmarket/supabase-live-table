@@ -24,16 +24,14 @@ describe('liveTable', () => {
     // Create a promise that resolves when we've seen the expected records
     const p = new Promise<void>((resolve, reject) => {
       // Start a table replication
-      const channel = liveTable<ThingRow, 'type'>(supabase, {
+      const channel = liveTable<ThingRow>(supabase, {
         // The table to replicate
         table: 'thing',
         // The column to filter on. It's strongly recommended to have an index on this column.
         filterColumn: 'type',
         // The value to filter on
         filterValue: 'vehicle',
-        // The name of the channel to subscribe to
-        channelName: 'thing:vehicle',
-        // This callback is called for every change to the table
+        // This callback is called for every change to the replicated table
         callback: (err, records) => {
           if (err) return reject(err);
           // Check that we've seen the expected records, which is just one record with name 'bike' and type 'vehicle'
@@ -140,11 +138,10 @@ describe('liveTable', () => {
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const success = new Promise<void>((resolve, reject) => {
-      const channel = liveTable<ThingRow, 'type'>(supabase, {
+      const channel = liveTable<ThingRow>(supabase, {
         table: 'thing',
         filterColumn: 'type',
         filterValue: columnValue,
-        channelName: 'thing:vehicle',
         callback: (err, records) => {
           if (err) return reject(err);
           const names = [...records].map((r) => r.name).sort();

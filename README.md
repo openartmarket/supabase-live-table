@@ -20,6 +20,38 @@ The rows to replicate can be filtered by a column value.
 
     npm install @openartmarket/supabase-live-table
 
+## Usage
+
+The example below shows how to replicate a table called `thing` with a filter column called `type`.
+This example unsubscribes from the realtime channel once it has seen the expected records.
+
+```typescript
+import { liveTable } from '@openartmarket/supabase-live-table'
+import { SupabaseClient } from '@supabase/supabase-js'
+// From `supabase gen types typescript --local > test/Database.ts`
+import { Database } from './Database'
+
+type ThingRow = Database['public']['Tables']['thing']['Row']
+
+// Start a table replication
+const channel = liveTable<ThingRow>(supabase, {
+  // The table to replicate
+  table: 'thing',
+  // The column to filter on. It's strongly recommended to have an index on this column.
+  filterColumn: 'type',
+  // The value to filter on
+  filterValue: 'vehicle',
+  // This callback is called for every change to the replicated table
+  callback: (err, records) => {
+    if (err) {
+      console.error(err);
+      return;
+    };
+    console.log(records);
+  },
+});
+```
+
 ## Table configuration
 
 LiveTable requires a few changes to your database table to work correctly.
@@ -69,59 +101,6 @@ drop publication if exists supabase_realtime;
 create publication supabase_realtime; 
 -- Specify the table you're enabling realtime for 
 alter publication supabase_realtime add table "thing";
-```
-
-## Usage
-
-After configuring your table, you can use the `liveTable` function to replicate it in memory.
-
-The example below shows how to replicate a table called `thing` with a filter column called `type`.
-This example unsubscribes from the realtime channel once it has seen the expected records.
-
-```typescript
-import { liveTable } from '@openartmarket/supabase-live-table'
-import { SupabaseClient } from '@supabase/supabase-js'
-// From `supabase gen types typescript --local > test/Database.ts`
-import { Database } from './Database'
-
-type ThingRow = Database['public']['Tables']['thing']['Row']
-
-
-// Create a promise that resolves when we've seen the expected records
-const p = new Promise<void>((resolve, reject) => {
-  // Start a table replication
-  const channel = liveTable<ThingRow, 'type'>(supabase, {
-    // The table to replicate
-    table: 'thing',
-    // The column to filter on. It's strongly recommended to have an index on this column.
-    filterColumn: 'type',
-    // The value to filter on
-    filterValue: 'vehicle',
-    // The name of the channel to subscribe to
-    channelName: 'thing:vehicle',
-    // This callback is called for every change to the table, or if an error occurs
-    callback: (err, records) => {
-      if (err) return reject(err)
-      // Check that we've seen the expected records, which is just one record with name 'bike' and type 'vehicle'
-      const actual = records.map(({ type, name }) => ({ type, name })).sort()
-      const expected = [{ type: 'vehicle', name: 'bike' }]
-      if (JSON.stringify(actual) == JSON.stringify(expected.sort())) {
-        channel.unsubscribe().then(() => resolve()).catch(reject)
-      }
-    }
-  })
-})
-// Insert some records, one of which matches our filter
-await supabase.from('thing').insert([
-  { type: 'ignored', name: 'skateboard' },
-  { type: 'vehicle', name: 'bicycle' },
-  { type: 'ignored', name: 'zeppelin' },
-]).throwOnError()
-// Rename bicycle to bike
-await supabase.from('thing').update({ name: 'bike' }).eq('name', 'bicycle').throwOnError()
-// Wait until we've seen the expected records
-await p
-
 ```
 
 ## Implementation

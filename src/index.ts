@@ -21,21 +21,28 @@ export type LiveTableParams<
   TableRow extends LiveRow,
   ColumnName extends keyof TableRow & string,
 > = {
-  schema?: string;
   table: string;
   filterColumn: ColumnName;
   filterValue: TableRow[ColumnName];
-  channelName: string;
   callback: LiveTableCallback<TableRow>;
+  schema?: string;
+  channelName?: string;
 };
 
-export function liveTable<TableRow extends LiveRow, ColumnName extends keyof TableRow & string>(
+export function liveTable<TableRow extends LiveRow>(
   supabase: SupabaseClient,
-  params: LiveTableParams<TableRow, ColumnName>,
+  params: LiveTableParams<TableRow, keyof TableRow & string>,
 ): RealtimeChannel {
   const liveTable = new LiveTable<TableRow>();
 
-  const { schema = 'public', table, filterColumn, filterValue, channelName, callback } = params;
+  const {
+    table,
+    filterColumn,
+    filterValue,
+    callback,
+    channelName = `${table}-${filterColumn}-${filterValue}`,
+    schema = 'public',
+  } = params;
 
   return (
     supabase
