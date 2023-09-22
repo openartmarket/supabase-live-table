@@ -69,12 +69,21 @@ describe('LiveTable Buffering', () => {
     console.log(JSON.stringify(lt.records, null, 2));
   });
 
-  it('detects conflicting inserts', async () => {
+  it('rejects conflicting inserts when the timestamps are different', async () => {
+    const lt = new MermaidLiveTable(new LiveTable<ThingRow>());
+
+    const record = { id: 1, created_at: t1, updated_at: null, name: 'Un' };
+    lt.processEvent({ timestamp: t2, type: 'INSERT', record: { ...record, created_at: t2 } });
+    expect(() => lt.snapshot([record])).toThrowError(/Conflicting insert/);
+  });
+
+  it('ignores conflicting inserts when the timestamps are identical', async () => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>());
 
     const record = { id: 1, created_at: t1, updated_at: null, name: 'Un' };
     lt.processEvent({ timestamp: t1, type: 'INSERT', record });
-    expect(() => lt.snapshot([record])).toThrowError(/Conflicting insert/);
+    lt.snapshot([record]);
+    expect(lt.records).toEqual([record]);
   });
 });
 

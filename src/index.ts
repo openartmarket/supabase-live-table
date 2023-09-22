@@ -146,7 +146,14 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
     switch (type) {
       case 'INSERT': {
         if (this.recordById.has(record.id)) {
-          const existing = this.recordById.get(record.id);
+          const existing = this.recordById.get(record.id)!;
+          // If the timestamp of the existing record is the same as the event timestamp, we'll ignore this event
+          const recordTimestamp = new Date(record.updated_at || record.created_at);
+          const existingTimestamp = new Date(existing?.updated_at || existing?.created_at);
+          if (recordTimestamp.getTime() === existingTimestamp.getTime()) {
+            return;
+          }
+
           throw new Error(
             `Conflicting insert. We already have ${JSON.stringify(
               existing,
@@ -174,9 +181,9 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
   snapshot(records: readonly TableRow[]) {
     let snapshotTimestamp = new Date(0);
     for (const record of records) {
-      const ts = new Date(record.updated_at || record.created_at);
-      if (ts > snapshotTimestamp) {
-        snapshotTimestamp = ts;
+      const recordTimestamp = new Date(record.updated_at || record.created_at);
+      if (recordTimestamp > snapshotTimestamp) {
+        snapshotTimestamp = recordTimestamp;
       }
       this.recordById.set(record.id, record);
     }
@@ -199,10 +206,14 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
 function validate<TableRow extends LiveRow>(
   event: LiveTableEvent<TableRow>,
 ): LiveTableEvent<TableRow> {
-  const { timestamp, record } = event;
+  const { timestamp, record, type } = event;
   const eventTimestamp = new Date(timestamp);
+  if (type === 'DELETE') {
+    // Delete events don't have timestamps on the record - just the id
+    return event;
+  }
   if (!record.created_at) {
-    throw new Error(`Record has no created_at: ${JSON.stringify(record)}`);
+    throw new Error(`Record has no created_at. Event: ${JSON.stringify(event)}`);
   }
   const recordTimestamp = new Date(record.updated_at || record.created_at);
   if (eventTimestamp < recordTimestamp) {

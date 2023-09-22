@@ -111,10 +111,30 @@ describe('liveTable', () => {
     });
   });
 
+  it('handles updates that arrive after snapshot', async () => {
+    await hasRecords(
+      'vehicle',
+      ['bike', 'skateboard', 'zeppelin'],
+      async () => {
+        await supabase
+          .from('thing')
+          .insert([
+            { type: 'vehicle', name: 'skateboard' },
+            { type: 'vehicle', name: 'bicycle' },
+            { type: 'vehicle', name: 'zeppelin' },
+          ])
+          .throwOnError();
+      },
+      async () => {
+        await supabase.from('thing').update({ name: 'bike' }).eq('name', 'bicycle').throwOnError();
+      },
+    );
+  });
   async function hasRecords(
     columnValue: string,
     expected: readonly string[],
     write: () => Promise<void>,
+    subscribed?: () => Promise<void>,
   ): Promise<void> {
     let error: Error | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -139,6 +159,9 @@ describe('liveTable', () => {
               .catch(reject);
           } catch (err) {
             error = err;
+          }
+          if (subscribed) {
+            subscribed().catch(reject);
           }
         },
       });
