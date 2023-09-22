@@ -21,6 +21,7 @@ export type LiveTableParams<
   TableRow extends LiveRow,
   ColumnName extends keyof TableRow & string,
 > = {
+  schema?: string;
   table: string;
   filterColumn: ColumnName;
   filterValue: TableRow[ColumnName];
@@ -34,13 +35,7 @@ export function liveTable<TableRow extends LiveRow, ColumnName extends keyof Tab
 ): RealtimeChannel {
   const liveTable = new LiveTable<TableRow>();
 
-  const {
-    table: tableName,
-    filterColumn: columnName,
-    filterValue: columnValue,
-    channelName,
-    callback,
-  } = params;
+  const { schema = 'public', table, filterColumn, filterValue, channelName, callback } = params;
 
   return (
     supabase
@@ -49,9 +44,9 @@ export function liveTable<TableRow extends LiveRow, ColumnName extends keyof Tab
         'postgres_changes',
         {
           event: '*',
-          schema: 'public',
-          table: tableName,
-          filter: `${columnName}=eq.${columnValue}`,
+          schema,
+          table,
+          filter: `${filterColumn}=eq.${filterValue}`,
         },
         (payload: RealtimePostgresChangesPayload<TableRow>) => {
           const timestamp = payload.commit_timestamp;
@@ -86,9 +81,9 @@ export function liveTable<TableRow extends LiveRow, ColumnName extends keyof Tab
       .on('system', {}, (payload) => {
         if (payload.extension === 'postgres_changes') {
           supabase
-            .from(tableName)
+            .from(table)
             .select('*')
-            .eq(columnName, columnValue)
+            .eq(filterColumn, filterValue)
             .then(({ error, data }) => {
               if (error) {
                 callback(new Error(error.message), []);
