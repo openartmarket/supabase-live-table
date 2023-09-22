@@ -1,12 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { ILiveTable, LiveTable, LiveTableEvent, LiveRow } from '../src';
+import { ILiveTable, LiveTable, LiveTableEvent } from '../src';
 import fs from 'fs';
 import { Writable } from 'stream';
+import { Database } from './Database';
 
-type ThingRow = LiveRow & {
-  id: number;
-  name: string;
-};
+type ThingRow = Database['public']['Tables']['thing']['Row'];
 
 const t1 = '2023-09-21T22:28:00.00Z';
 const t2 = '2023-09-21T22:28:00.01Z';
@@ -24,7 +22,8 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: t2,
-      name: 'Un',
+      name: 'Bike',
+      type: 'vehicle',
     };
     lt.processEvent({ timestamp: t2, type: 'UPDATE', record: streamRecord });
 
@@ -32,7 +31,8 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t2,
       updated_at: t3,
-      name: 'One',
+      name: 'Bicycle',
+      type: 'vehicle',
     };
     lt.processSnapshot([snapshotRecord]);
 
@@ -52,7 +52,8 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: t2,
-      name: 'One',
+      name: 'Bicycle',
+      type: 'vehicle',
     };
     lt.processSnapshot([snapshotRecord]);
 
@@ -60,7 +61,8 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t2,
       updated_at: t3,
-      name: 'Un',
+      name: 'Bike',
+      type: 'vehicle',
     };
     lt.processEvent({ timestamp: t3, type: 'UPDATE', record: streamRecord });
 
@@ -75,7 +77,9 @@ describe('LiveTable Buffering', () => {
     lt.subscribe();
     lt.subscribed();
     lt.requestSnapshot();
-    lt.processSnapshot([{ created_at: t1, updated_at: null, id: 1, name: 'One' }]);
+    lt.processSnapshot([
+      { created_at: t1, updated_at: null, id: 1, name: 'Bicycle', type: 'vehicle' },
+    ]);
 
     lt.processEvent({ timestamp: t2, type: 'DELETE', record: { id: 1 } });
 
@@ -87,7 +91,13 @@ describe('LiveTable Buffering', () => {
   it('rejects conflicting inserts when the timestamps are different', async () => {
     const lt = new LiveTable<ThingRow>();
 
-    const record = { id: 1, created_at: t1, updated_at: null, name: 'Un' };
+    const record: ThingRow = {
+      id: 1,
+      created_at: t1,
+      updated_at: null,
+      name: 'Bike',
+      type: 'vehicle',
+    };
     lt.processEvent({ timestamp: t2, type: 'INSERT', record: { ...record, created_at: t2 } });
     expect(() => lt.processSnapshot([record])).toThrowError(/Conflicting insert/);
   });
@@ -95,17 +105,23 @@ describe('LiveTable Buffering', () => {
   it('ignores conflicting inserts when the timestamps are identical', async () => {
     const lt = new LiveTable<ThingRow>();
 
-    const record = { id: 1, created_at: t1, updated_at: null, name: 'Un' };
+    const record: ThingRow = {
+      id: 1,
+      created_at: t1,
+      updated_at: null,
+      name: 'Bike',
+      type: 'vehicle',
+    };
     lt.processEvent({ timestamp: t1, type: 'INSERT', record });
     lt.processSnapshot([record]);
     expect(lt.records).toEqual([record]);
   });
 });
 
-export class MermaidLiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow> {
+export class MermaidLiveTable implements ILiveTable<ThingRow> {
   private readonly fileStream: Writable;
 
-  constructor(private readonly delegate: ILiveTable<TableRow>, name: string) {
+  constructor(private readonly delegate: ILiveTable<ThingRow>, name: string) {
     const path = `./docs/${name.toLowerCase().replace(/\s/g, '-')}.md`;
     this.fileStream = fs.createWriteStream(path, 'utf-8');
     this.fileStream.write(`### ${name}\n`);
@@ -113,19 +129,19 @@ export class MermaidLiveTable<TableRow extends LiveRow> implements ILiveTable<Ta
     this.fileStream.write('sequenceDiagram\n');
   }
 
-  processSnapshot(records: readonly TableRow[]) {
+  processSnapshot(records: readonly ThingRow[]) {
     this.fileStream.write(`  Supabase->>-LiveTable: snaphot: ${JSON.stringify(records.map(p))}\n`);
     this.delegate.processSnapshot(records);
   }
 
-  processEvent(event: LiveTableEvent<TableRow>) {
+  processEvent(event: LiveTableEvent<ThingRow>) {
     const { type, record } = event;
     const { id, name } = record;
     this.fileStream.write(`  Supabase-->>LiveTable: ${type} ${JSON.stringify({ id, name })}\n`);
     this.delegate.processEvent(event);
   }
 
-  get records(): readonly TableRow[] {
+  get records(): readonly ThingRow[] {
     return this.delegate.records;
   }
 
@@ -149,13 +165,14 @@ export class MermaidLiveTable<TableRow extends LiveRow> implements ILiveTable<Ta
     return new Promise((resolve) => {
       this.fileStream.write('```\n\n');
       this.fileStream.write('```json\n');
-      this.fileStream.write(JSON.stringify(this.records, null, 2));
+      const records = this.records.map((thing) => p(thing));
+      this.fileStream.write(JSON.stringify(records, null, 2));
       this.fileStream.write('\n```\n');
       this.fileStream.end(resolve);
     });
   }
 }
 
-function p({ id, name }: Partial<LiveRow>) {
-  return { id, name };
+function p({ id, name, type }: Partial<ThingRow>) {
+  return { id, name, type };
 }

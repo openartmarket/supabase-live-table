@@ -4,17 +4,16 @@ sequenceDiagram
   LiveTable->>+Supabase: subscribe
   Supabase->>-LiveTable: subscription active
   LiveTable->>+Supabase: get snapshot
-  Supabase-->>LiveTable: UPDATE {"id":1,"name":"Un"}
-  Supabase->>-LiveTable: snaphot: [{"id":1,"name":"One"}]
+  Supabase-->>LiveTable: UPDATE {"id":1,"name":"Bike"}
+  Supabase->>-LiveTable: snaphot: [{"id":1,"name":"Bicycle","type":"vehicle"}]
 ```
 
 ```json
 [
   {
     "id": 1,
-    "created_at": "2023-09-21T22:28:00.01Z",
-    "updated_at": "2023-09-21T22:28:00.02Z",
-    "name": "One"
+    "name": "Bicycle",
+    "type": "vehicle"
   }
 ]
 ```

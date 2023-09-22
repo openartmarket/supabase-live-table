@@ -4,7 +4,7 @@ sequenceDiagram
   LiveTable->>+Supabase: subscribe
   Supabase->>-LiveTable: subscription active
   LiveTable->>+Supabase: get snapshot
-  Supabase->>-LiveTable: snaphot: [{"id":1,"name":"One"}]
+  Supabase->>-LiveTable: snaphot: [{"id":1,"name":"Bicycle","type":"vehicle"}]
   Supabase-->>LiveTable: DELETE {"id":1}
 ```
 
