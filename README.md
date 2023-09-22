@@ -2,7 +2,11 @@
 
 In-memory replication of a Postgres table, synchronized with [Supabase Realtime](https://supabase.com/docs/guides/realtime).
 
-## Rationale
+## Motivation
+
+At [Open Art Market](https://www.openartmarket.com) we provide a marketplace where people can buy and sell shares in physical artworks.
+
+All buy/sell orders are stored in Supabase, and we needed a reliable way to display the current state of the order book in real-time.
 
 Supabase Realtime provides low-level primitives for receiving notifications of changes to a table, but it does not provide a way to keep a replica of the table in memory. This library provides a way to do that.
 
