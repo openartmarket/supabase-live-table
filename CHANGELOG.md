@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.0.6] - 2023-09-23
 ### Fixed
 - Release again with gpg
 
 ## [0.0.5] - 2023-09-23
-
 ### Fixed
 - Improved documentation
 
@@ -35,7 +35,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - First version of the project
 
-[Unreleased]: https://github.com/rcmachado/changelog/compare/v0.0.5...HEAD
+[Unreleased]: https://github.com/rcmachado/changelog/compare/v0.0.6...HEAD
+[0.0.6]: https://github.com/rcmachado/changelog/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/rcmachado/changelog/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/rcmachado/changelog/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/rcmachado/changelog/compare/v0.0.2...v0.0.3

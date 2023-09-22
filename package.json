@@ -1,6 +1,6 @@
 {
   "name": "@openartmarket/supabase-live-table",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Supabase Realtime on Absinthe",
   "author": {
     "name": "Open Art Market",
