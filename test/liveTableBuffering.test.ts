@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { ILiveTable, LiveTable, LiveTableEvent } from '../src';
 import fs from 'fs';
+import { rm, mkdir } from 'fs/promises';
 import { Writable } from 'stream';
 import { Database } from './Database';
 
@@ -11,7 +12,42 @@ const t2 = '2023-09-21T22:28:00.01Z';
 const t3 = '2023-09-21T22:28:00.02Z';
 
 describe('LiveTable Buffering', () => {
-  it('skips events that predate the snapshot', async (test) => {
+  beforeAll(async () => {
+    try {
+      await rm('./docs/sequence-diagrams', { recursive: true });
+    } catch (ignore) {
+      // ignore
+    }
+    await mkdir('./docs/sequence-diagrams', { recursive: true });
+  });
+
+  it('skips deletes that predate the snapshot', async (test) => {
+    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(), test.task.name);
+
+    lt.subscribe();
+    lt.subscribed();
+    lt.requestSnapshot();
+
+    const streamRecord: Partial<ThingRow> = {
+      id: 1,
+    };
+    lt.processEvent({ timestamp: t2, type: 'DELETE', record: streamRecord });
+
+    const snapshotRecord: ThingRow = {
+      id: 1,
+      created_at: t2,
+      updated_at: t3,
+      name: 'Bicycle',
+      type: 'vehicle',
+    };
+    lt.processSnapshot([snapshotRecord]);
+
+    expect(lt.records).toEqual([snapshotRecord]);
+
+    await lt.close();
+  });
+
+  it('skips updates that predate the snapshot', async (test) => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>(), test.task.name);
 
     lt.subscribe();
@@ -122,7 +158,7 @@ export class MermaidLiveTable implements ILiveTable<ThingRow> {
   private readonly fileStream: Writable;
 
   constructor(private readonly delegate: ILiveTable<ThingRow>, name: string) {
-    const path = `./docs/${name.toLowerCase().replace(/\s/g, '-')}.md`;
+    const path = `./docs/sequence-diagrams/${name.toLowerCase().replace(/\s/g, '-')}.md`;
     this.fileStream = fs.createWriteStream(path, 'utf-8');
     this.fileStream.write(`### ${name}\n\n`);
     this.fileStream.write('```mermaid\n');

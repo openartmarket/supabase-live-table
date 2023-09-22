@@ -155,7 +155,7 @@ There are two test suites for this library:
 It's not possible to reliably test the concurrency of the `liveTable` function, so the unit tests are a best effort attempt to test the concurrency of the buffering algorithm.
 
 The unit tests simulate various concurrency scenarios by interacting directly with the internal `LiveTable` class.
-These tests also generate [mermaid sequence diagrams](/docs) that show the order of events for each scenario, as well as the final state of the in-memory replica.
+These tests also generate [sequence diagrams](/docs/sequence-diagrams/) that show the order of events for each scenario, as well as the final state of the in-memory replica.
 
 Documenting a system like this is called [living documentation](https://www.amazon.co.uk/Living-Documentation-Cyrille-Martraire/dp/0134689321) and is a great way to keep the documentation up to date.
 
