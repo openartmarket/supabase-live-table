@@ -31,7 +31,7 @@ describe('liveTable', () => {
         filterColumn: 'type',
         // The value to filter on
         filterValue: 'vehicle',
-        // This callback is called for every change to the replicated table
+        // This callback is called for every change to the replicated table, or when an error occurs.
         callback: (err, records) => {
           if (err) return reject(err);
           // Check that we've seen the expected records, which is just one record with name 'bike' and type 'vehicle'

@@ -4,7 +4,10 @@ In-memory replication of a Postgres table, synchronized with [Supabase Realtime]
 
 ## Motivation
 
-Supabase Realtime provides low-level primitives for receiving notifications of changes to a table, but it does not provide a way to keep a replica of the table in memory. This library provides a way to do that.
+Some applications need a replica of a table in memory, and keep it up to date with changes to the table in real-time.
+While It uses [Supabase Realtime](https://supabase.com/docs/guides/realtime) provides low-level primitives for receiving notifications of changes to a table, it requires additional logic to keep a replica of the table in memory.
+
+Supabase Live Table builds on top of Supabase Realtime to provide a local memory replica of a table that stays in sync with changes to the table in real-time.
 
 ![Supabase Live Table](docs/supabase-live-table.png)
 
@@ -12,9 +15,9 @@ We use Supabase Live Table at [Open Art Market](https://openartmarket.com) to pr
 
 ## Overview
 
-Supabase Live Table provides one function (`liveTable`) that replicates a Postgres table in memory, and keeps it up to date with changes to the table in real-time. It uses [Supabase Realtime](https://supabase.com/docs/guides/realtime) to receive notifications of changes to the table, and then updates its in-memory read only replica.
+Supabase Live Table provides one function (`liveTable`) that initializes the table replication.
 
-The rows to replicate can be filtered by a column value. Supabase Live Table first fetches a snapshot of the table, and then applies incremental updates to the in-memory replica. It handles all the edge cases of concurrent updates to the table, and guarantees that the in-memory replica is always consistent with the table.
+The rows to replicate are filtered by a column value. Supabase Live Table first fetches a snapshot of the table, and then applies incremental updates to the in-memory replica. It handles all the edge cases of concurrent updates to the table, and guarantees that the in-memory replica stays consistent with the table.
 
 ## Installation
 
@@ -23,7 +26,6 @@ The rows to replicate can be filtered by a column value. Supabase Live Table fir
 ## Usage
 
 The example below shows how to replicate a table called `thing` with a filter column called `type`.
-This example unsubscribes from the realtime channel once it has seen the expected records.
 
 ```typescript
 import { liveTable } from '@openartmarket/supabase-live-table'
@@ -41,7 +43,7 @@ const channel = liveTable<ThingRow>(supabase, {
   filterColumn: 'type',
   // The value to filter on
   filterValue: 'vehicle',
-  // This callback is called for every change to the replicated table
+  // This callback is called for every change to the replicated table, or when an error occurs.
   callback: (err, records) => {
     if (err) {
       console.error(err);
