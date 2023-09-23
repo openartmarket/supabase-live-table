@@ -167,6 +167,15 @@ These tests also generate [sequence diagrams](/docs/sequence-diagrams/) that sho
 
 Documenting a system like this is called [living documentation](https://www.amazon.co.uk/Living-Documentation-Cyrille-Martraire/dp/0134689321) and is a great way to keep the documentation up to date.
 
+## Related
+
+### [Realtime2](https://github.com/GaryAustin1/Realtime2) by Gary Austin. 
+
+A similar library that doesn't require timestamps on the table, and applies all buffered messages to the in-memory replica,
+even if they are older than the snapshot. 
+
+This works as long as no messages are lost, but if [messages *are* lost](https://github.com/supabase/realtime#does-this-server-guarantee-message-delivery), the in-memory replica might contain older data than the snapshot.
+
 ## License
 
 MIT © [Open Art Market](https://openartmarket.com)
