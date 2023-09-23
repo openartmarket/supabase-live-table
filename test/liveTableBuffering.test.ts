@@ -7,9 +7,11 @@ import { Database } from './Database';
 
 type ThingRow = Database['public']['Tables']['thing']['Row'];
 
-const t1 = '2023-09-21T22:28:00.00Z';
-const t2 = '2023-09-21T22:28:00.01Z';
-const t3 = '2023-09-21T22:28:00.02Z';
+// We use integers for timestamps to make the tests and generated sequence diagrams easier to read
+const t1 = '1';
+const t2 = '2';
+const t3 = '3';
+const parseTimestamp = (timestamp: string) => +timestamp;
 
 describe('LiveTable Buffering', () => {
   beforeAll(async () => {
@@ -22,7 +24,7 @@ describe('LiveTable Buffering', () => {
   });
 
   it('skips deletes that predate the snapshot', async (test) => {
-    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(), test.task.name);
+    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(parseTimestamp), test.task.name);
 
     lt.subscribe();
     lt.subscribed();
@@ -48,7 +50,7 @@ describe('LiveTable Buffering', () => {
   });
 
   it('skips updates that predate the snapshot', async (test) => {
-    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(), test.task.name);
+    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(parseTimestamp), test.task.name);
 
     lt.subscribe();
     lt.subscribed();
@@ -78,7 +80,7 @@ describe('LiveTable Buffering', () => {
   });
 
   it('replays updates that arrived after the snapshot', async (test) => {
-    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(), test.task.name);
+    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(parseTimestamp), test.task.name);
 
     lt.subscribe();
     lt.subscribed();
@@ -108,7 +110,7 @@ describe('LiveTable Buffering', () => {
   });
 
   it('replays deletes that arrived after the snapshot', async (test) => {
-    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(), test.task.name);
+    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(parseTimestamp), test.task.name);
 
     lt.subscribe();
     lt.subscribed();
@@ -125,7 +127,7 @@ describe('LiveTable Buffering', () => {
   });
 
   it('rejects conflicting inserts when the timestamps are different', async () => {
-    const lt = new LiveTable<ThingRow>();
+    const lt = new LiveTable<ThingRow>(parseTimestamp);
 
     const record: ThingRow = {
       id: 1,
@@ -139,7 +141,7 @@ describe('LiveTable Buffering', () => {
   });
 
   it('ignores conflicting inserts when the timestamps are identical', async () => {
-    const lt = new LiveTable<ThingRow>();
+    const lt = new LiveTable<ThingRow>(parseTimestamp);
 
     const record: ThingRow = {
       id: 1,
@@ -166,13 +168,13 @@ export class MermaidLiveTable implements ILiveTable<ThingRow> {
   }
 
   processSnapshot(records: readonly ThingRow[]) {
-    this.fileStream.write(`  Supabase->>-LiveTable: snaphot: ${JSON.stringify(records.map(p))}\n`);
+    this.fileStream.write(`  Supabase->>-LiveTable: snaphot: ${JSON.stringify(records)}\n`);
     this.delegate.processSnapshot(records);
   }
 
   processEvent(event: LiveTableEvent<ThingRow>) {
     const { type, record } = event;
-    this.fileStream.write(`  Supabase-->>LiveTable: ${type} ${JSON.stringify(p(record))}\n`);
+    this.fileStream.write(`  Supabase-->>LiveTable: ${type} ${JSON.stringify(record)}\n`);
     this.delegate.processEvent(event);
   }
 
@@ -201,14 +203,9 @@ export class MermaidLiveTable implements ILiveTable<ThingRow> {
       this.fileStream.write('```\n\n');
       this.fileStream.write('### replica\n');
       this.fileStream.write('```json\n');
-      const records = this.records.map((thing) => p(thing));
-      this.fileStream.write(JSON.stringify(records, null, 2));
+      this.fileStream.write(JSON.stringify(this.records, null, 2));
       this.fileStream.write('\n```\n');
       this.fileStream.end(resolve);
     });
   }
-}
-
-function p({ id, name, type }: Partial<ThingRow>) {
-  return { id, name, type };
 }

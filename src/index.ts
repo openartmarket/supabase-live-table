@@ -33,7 +33,8 @@ export function liveTable<TableRow extends LiveRow>(
   supabase: SupabaseClient,
   params: LiveTableParams<TableRow, keyof TableRow & string>,
 ): RealtimeChannel {
-  const liveTable = new LiveTable<TableRow>();
+  const parseTimestamp = (timestamp: string) => new Date(timestamp).getTime();
+  const liveTable = new LiveTable<TableRow>(parseTimestamp);
 
   const {
     table,
@@ -133,10 +134,14 @@ export type ILiveTable<TableRow extends LiveRow> = {
   readonly records: readonly TableRow[];
 };
 
+export type ParseTimestamp = (timestamp: string) => number;
+
 export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow> {
   private readonly recordById = new Map<ID, TableRow>();
   private buffering = true;
   private readonly bufferedEvents: LiveTableEvent<TableRow>[] = [];
+
+  constructor(private readonly parseTimestamp: ParseTimestamp) {}
 
   public processEvent(event: LiveTableEvent<TableRow>) {
     if (this.buffering) {
@@ -150,9 +155,11 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
         if (this.recordById.has(record.id)) {
           const existing = this.recordById.get(record.id)!;
           // If the timestamp of the existing record is the same as the event timestamp, we'll ignore this event
-          const recordTimestamp = new Date(record.updated_at || record.created_at);
-          const existingTimestamp = new Date(existing?.updated_at || existing?.created_at);
-          if (recordTimestamp.getTime() === existingTimestamp.getTime()) {
+          const recordTimestamp = this.parseTimestamp(record.updated_at || record.created_at);
+          const existingTimestamp = this.parseTimestamp(
+            existing?.updated_at || existing?.created_at,
+          );
+          if (recordTimestamp === existingTimestamp) {
             return;
           }
 
@@ -184,9 +191,9 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
   }
 
   processSnapshot(records: readonly TableRow[]) {
-    let snapshotTimestamp = new Date(0);
+    let snapshotTimestamp = 0;
     for (const record of records) {
-      const recordTimestamp = new Date(record.updated_at || record.created_at);
+      const recordTimestamp = this.parseTimestamp(record.updated_at || record.created_at);
       if (recordTimestamp > snapshotTimestamp) {
         snapshotTimestamp = recordTimestamp;
       }
@@ -194,7 +201,7 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
     }
     this.buffering = false;
     for (const event of this.bufferedEvents) {
-      const eventTimestamp = new Date(event.timestamp);
+      const eventTimestamp = this.parseTimestamp(event.timestamp);
       if (eventTimestamp < snapshotTimestamp) {
         // This event is older than the snapshot, so we can ignore it
         continue;
