@@ -67,7 +67,7 @@ describe('LiveTable Buffering', () => {
 
     const snapshotRecord: ThingRow = {
       id: 1,
-      created_at: t2,
+      created_at: t1,
       updated_at: t3,
       name: 'Bicycle',
       type: 'vehicle',
@@ -97,7 +97,7 @@ describe('LiveTable Buffering', () => {
 
     const streamRecord: ThingRow = {
       id: 1,
-      created_at: t2,
+      created_at: t1,
       updated_at: t3,
       name: 'Bike',
       type: 'vehicle',
