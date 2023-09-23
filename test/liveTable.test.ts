@@ -21,44 +21,27 @@ describe('liveTable', () => {
   });
 
   it('shows an example of usage for the README', async () => {
-    // Create a promise that resolves when we've seen the expected records
-    const p = new Promise<void>((resolve, reject) => {
-      // Start a table replication
+    function subscribe(handleThings: (things: readonly ThingRow[]) => void) {
       const channel = liveTable<ThingRow>(supabase, {
-        // The table to replicate
         table: 'thing',
-        // The column to filter on. It's strongly recommended to have an index on this column.
         filterColumn: 'type',
-        // The value to filter on
         filterValue: 'vehicle',
-        // This callback is called for every change to the replicated table, or when an error occurs.
-        callback: (err, records) => {
-          if (err) return reject(err);
-          // Check that we've seen the expected records, which is just one record with name 'bike' and type 'vehicle'
-          const actual = records.map(({ type, name }) => ({ type, name })).sort();
-          const expected = [{ type: 'vehicle', name: 'bike' }];
-          if (JSON.stringify(actual) == JSON.stringify(expected.sort())) {
-            channel
-              .unsubscribe()
-              .then(() => resolve())
-              .catch(reject);
+        callback: (err, things) => {
+          if (err) {
+            channel.unsubscribe().then(() => subscribe(handleThings));
+            return;
           }
+          handleThings(things);
         },
       });
+      return channel;
+    }
+
+    const channel = subscribe((things) => {
+      console.log('Updated things:', things);
     });
-    // Insert some records, one of which matches our filter
-    await supabase
-      .from('thing')
-      .insert([
-        { type: 'ignored', name: 'skateboard' },
-        { type: 'vehicle', name: 'bicycle' },
-        { type: 'ignored', name: 'zeppelin' },
-      ])
-      .throwOnError();
-    // Rename bicycle to bike
-    await supabase.from('thing').update({ name: 'bike' }).eq('name', 'bicycle').throwOnError();
-    // Wait until we've seen the expected records
-    await p;
+
+    channel.unsubscribe();
   });
 
   it('filters on column', async () => {

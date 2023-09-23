@@ -5,10 +5,9 @@ In-memory replication of a Postgres table, synchronized with [Supabase Realtime]
 ## Motivation
 
 Some applications need a replica of a table in memory, and keep it up to date with changes to the table in real-time.
-[Supabase Realtime](https://supabase.com/docs/guides/realtime) provides low-level primitives for receiving notifications of changes to a table, but it requires additional complicated logic to keep an exact replica of the table in memory.
+Supabase Realtime provides low-level primitives for receiving notifications of changes to a table, but it requires additional complicated logic to keep an exact replica of the table in memory.
 
-Supabase Live Table provides a read-only replication mechanism that builds on top of Supabase Realtime.
-This replica stays in sync with changes to the table in real-time.
+Supabase Live Table implements this replication logic.
 
 ![Supabase Live Table](docs/supabase-live-table.png)
 
@@ -19,9 +18,11 @@ This replica stays in sync with changes to the table in real-time.
 
 ## Overview
 
-Supabase Live Table provides a (`liveTable`) function that initializes the table replication.
+Supabase Live Table provides a `liveTable` function that initializes the table replication.
 
-The rows to replicate are filtered by a column value. Supabase Live Table first fetches a snapshot of the table, and then applies incremental updates to the in-memory replica. It handles edge cases of concurrent updates to the table, and guarantees that the in-memory replica stays consistent with the table.
+Supabase Live Table first fetches a snapshot of the table, and then applies incremental updates to the in-memory replica. It handles edge cases of concurrent updates to the table, and guarantees that the in-memory replica stays consistent with the table.
+
+The rows to replicate are filtered by a column value. 
 
 ## Installation
 
@@ -34,27 +35,44 @@ The example below shows how to replicate a table called `thing` with a filter co
 ```typescript
 import { liveTable } from '@openartmarket/supabase-live-table'
 import { SupabaseClient } from '@supabase/supabase-js'
-// From `supabase gen types typescript --local > test/Database.ts`
 import { Database } from './Database'
 
 type ThingRow = Database['public']['Tables']['thing']['Row']
 
-// Start a table replication
 const channel = liveTable<ThingRow>(supabase, {
-  // The table to replicate
   table: 'thing',
-  // The column to filter on. It's strongly recommended to have an index on this column.
   filterColumn: 'type',
-  // The value to filter on
   filterValue: 'vehicle',
-  // This callback is called for every change to the replicated table, or when an error occurs.
-  callback: (err, records) => {
+  callback: (err, things) => {
     if (err) {
       console.error(err);
       return;
-    };
-    console.log(records);
-  },
+    }
+    console.log(things);
+  }
+});
+```
+
+Automatic reconnection has been deliberately left out of this library. If the connection is lost, the `callback` function will be called with an error. It's up to the application to handle reconnection. The following example describes how to do this:
+
+```typescript
+function subscribe(handleThings: (things: readonly ThingRow[]) => void) {
+  const channel = liveTable<ThingRow>(supabase, {
+    table: 'thing',
+    filterColumn: 'type',
+    filterValue: 'vehicle',
+    callback: (err, things) => {
+      if (err) {
+        channel.unsubscribe().then(() => subscribe(handleThings));
+        return;
+      }
+      handleThings(things);
+    }
+  });
+}
+
+subscribe((things) => {
+  console.log('Updated things:', things);
 });
 ```
 
@@ -134,10 +152,6 @@ The algoritm is as follows:
 ### Errors
 
 If the Realtime channel is disconnected as result of a timeout or network error, the `callback` function will be called with an error.
-
-### ⚠️⚠️⚠️ Reconnection is out of scope ⚠️⚠️⚠️ 
-
-Automatic reconnection is out of scope of this library and must be implemented by the caller - typically when the `callback` function is called with an error.
 
 ## Testing
 
