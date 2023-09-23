@@ -109,7 +109,7 @@ describe('LiveTable Buffering', () => {
     await lt.close();
   });
 
-  it('replays updates that arrived after the snapshot', async (test) => {
+  it('replays updates that are more recent than snapshot and arrived after', async (test) => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>(parseTimestamp), test.task.name);
 
     lt.subscribe();
@@ -133,6 +133,36 @@ describe('LiveTable Buffering', () => {
       type: 'vehicle',
     };
     lt.processEvent({ timestamp: t3, type: 'UPDATE', record: streamRecord });
+
+    expect(lt.records).toEqual([streamRecord]);
+
+    await lt.close();
+  });
+
+  it('replays updates that are more recent than snapshot and arrived before', async (test) => {
+    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(parseTimestamp), test.task.name);
+
+    lt.subscribe();
+    lt.subscribed();
+    lt.requestSnapshot();
+
+    const streamRecord: ThingRow = {
+      id: 1,
+      created_at: t1,
+      updated_at: t3,
+      name: 'Bike',
+      type: 'vehicle',
+    };
+    lt.processEvent({ timestamp: t3, type: 'UPDATE', record: streamRecord });
+
+    const snapshotRecord = {
+      id: 1,
+      created_at: t1,
+      updated_at: t2,
+      name: 'Bicycle',
+      type: 'vehicle',
+    };
+    lt.processSnapshot([snapshotRecord]);
 
     expect(lt.records).toEqual([streamRecord]);
 
