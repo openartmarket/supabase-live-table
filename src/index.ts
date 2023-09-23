@@ -138,14 +138,21 @@ export type ParseTimestamp = (timestamp: string) => number;
 
 export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow> {
   private readonly recordById = new Map<ID, TableRow>();
-  private buffering = true;
   private readonly bufferedEvents: LiveTableEvent<TableRow>[] = [];
+
+  private snapshotTimestamp: number | undefined;
 
   constructor(private readonly parseTimestamp: ParseTimestamp) {}
 
   public processEvent(event: LiveTableEvent<TableRow>) {
-    if (this.buffering) {
+    if (this.snapshotTimestamp === undefined) {
       this.bufferedEvents.push(event);
+      return;
+    }
+
+    const eventTimestamp = this.parseTimestamp(event.timestamp);
+    if (eventTimestamp < this.snapshotTimestamp) {
+      // This event is older than the snapshot, so we can ignore it
       return;
     }
 
@@ -191,21 +198,15 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
   }
 
   processSnapshot(records: readonly TableRow[]) {
-    let snapshotTimestamp = 0;
+    this.snapshotTimestamp = 0;
     for (const record of records) {
       const recordTimestamp = this.parseTimestamp(record.updated_at || record.created_at);
-      if (recordTimestamp > snapshotTimestamp) {
-        snapshotTimestamp = recordTimestamp;
+      if (recordTimestamp > this.snapshotTimestamp) {
+        this.snapshotTimestamp = recordTimestamp;
       }
       this.recordById.set(record.id, record);
     }
-    this.buffering = false;
     for (const event of this.bufferedEvents) {
-      const eventTimestamp = this.parseTimestamp(event.timestamp);
-      if (eventTimestamp < snapshotTimestamp) {
-        // This event is older than the snapshot, so we can ignore it
-        continue;
-      }
       this.processEvent(event);
     }
   }
