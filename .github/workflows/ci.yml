@@ -1,0 +1,34 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: "18"
+
+    - name: Install
+      run: npm ci
+
+    - name: Start Supabase
+      run: ./node_modules/.bin/supabase start
+
+    - name: Check that the types are OK
+      run: npm run compile
+
+    - name: Test
+      run: npm test
+
+    - name: Stop Supabase
+      run: ./node_modules/.bin/supabase stop
