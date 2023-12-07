@@ -114,6 +114,7 @@ describe('liveTable', () => {
       },
     );
   });
+
   async function hasRecords(
     columnValue: string,
     expected: readonly string[],
