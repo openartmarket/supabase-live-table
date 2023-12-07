@@ -113,7 +113,7 @@ type Insert<TableRow extends LiveRow> = {
 
 type Update<TableRow extends LiveRow> = {
   type: 'UPDATE';
-  record: TableRow;
+  record: Partial<TableRow>;
   timestamp: string;
 };
 
@@ -180,10 +180,15 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
         break;
       }
       case 'UPDATE': {
-        if (!this.recordById.has(record.id)) {
+        const id = record.id;
+        if (!id) {
+          throw new Error(`Cannot delete. Record has no id: ${JSON.stringify(record)}`);
+        }
+        const oldRecord = this.recordById.get(id);
+        if (oldRecord === undefined) {
           throw new Error(`Cannot update. Record does not exist: ${JSON.stringify(record)}`);
         }
-        this.recordById.set(record.id, record);
+        this.recordById.set(id, { ...oldRecord, ...record });
         break;
       }
       case 'DELETE': {

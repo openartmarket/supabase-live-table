@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Merge streamed updates with existing record. Fixes [#2](https://github.com/openartmarket/supabase-live-table/issues/2)
+
 ## [0.0.7] - 2023-09-23
 ### Fixed
 - Ignore updates that arrive after the snapshot, but are timestamped before the snapshot
