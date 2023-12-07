@@ -6,7 +6,7 @@ sequenceDiagram
   Supabase->>-LiveTable: subscription active
   LiveTable->>+Supabase: get snapshot
   Supabase-->>LiveTable: DELETE {"id":1}
-  Supabase->>-LiveTable: snaphot: [{"id":1,"created_at":"2","updated_at":"3","name":"Bicycle","type":"vehicle"}]
+  Supabase->>-LiveTable: snaphot: [{"id":1,"created_at":"2","updated_at":"3","type":"vehicle","name":"Bicycle","color":"black"}]
 ```
 
 ### replica
@@ -16,8 +16,9 @@ sequenceDiagram
     "id": 1,
     "created_at": "2",
     "updated_at": "3",
+    "type": "vehicle",
     "name": "Bicycle",
-    "type": "vehicle"
+    "color": "black"
   }
 ]
 ```

@@ -1,9 +1,9 @@
-INSERT INTO public.thing (name, type)
+INSERT INTO public.thing (name, type, color)
 VALUES 
-  ('Apple', 'food'), 
-  ('Orange', 'food'), 
-  ('Pear', 'food'),
-  ('Bike', 'vehicle'),
-  ('Car', 'vehicle'),
-  ('Lorry', 'vehicle'),
-  ('Boat', 'vehicle');
+  ('Apple', 'food', 'red'), 
+  ('Orange', 'food', 'orange'), 
+  ('Pear', 'food', 'green'),
+  ('Bike', 'vehicle', 'black'),
+  ('Car', 'vehicle', 'yellow'),
+  ('Lorry', 'vehicle', 'red'),
+  ('Boat', 'vehicle', 'orange');

@@ -39,8 +39,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t2,
       updated_at: t3,
-      name: 'Bicycle',
       type: 'vehicle',
+      name: 'Bicycle',
+      color: 'black',
     };
     lt.processSnapshot([snapshotRecord]);
 
@@ -60,8 +61,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: t2,
-      name: 'Bike',
       type: 'vehicle',
+      name: 'Bike',
+      color: 'black',
     };
     lt.processEvent({ timestamp: t2, type: 'UPDATE', record: streamRecord });
 
@@ -69,8 +71,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: t3,
-      name: 'Bicycle',
       type: 'vehicle',
+      name: 'Bicycle',
+      color: 'black',
     };
     lt.processSnapshot([snapshotRecord]);
 
@@ -90,8 +93,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: t3,
-      name: 'Bicycle',
       type: 'vehicle',
+      name: 'Bicycle',
+      color: 'black',
     };
     lt.processSnapshot([snapshotRecord]);
 
@@ -99,8 +103,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: t2,
-      name: 'Bike',
       type: 'vehicle',
+      name: 'Bike',
+      color: 'black',
     };
     lt.processEvent({ timestamp: t2, type: 'UPDATE', record: streamRecord });
 
@@ -120,8 +125,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: t2,
-      name: 'Bicycle',
       type: 'vehicle',
+      name: 'Bicycle',
+      color: 'black',
     };
     lt.processSnapshot([snapshotRecord]);
 
@@ -129,8 +135,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: t3,
-      name: 'Bike',
       type: 'vehicle',
+      name: 'Bike',
+      color: 'black',
     };
     lt.processEvent({ timestamp: t3, type: 'UPDATE', record: streamRecord });
 
@@ -150,8 +157,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: t3,
-      name: 'Bike',
       type: 'vehicle',
+      name: 'Bike',
+      color: 'black',
     };
     lt.processEvent({ timestamp: t3, type: 'UPDATE', record: streamRecord });
 
@@ -159,8 +167,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: t2,
-      name: 'Bicycle',
       type: 'vehicle',
+      name: 'Bicycle',
+      color: 'black',
     };
     lt.processSnapshot([snapshotRecord]);
 
@@ -176,7 +185,7 @@ describe('LiveTable Buffering', () => {
     lt.subscribed();
     lt.requestSnapshot();
     lt.processSnapshot([
-      { created_at: t1, updated_at: null, id: 1, name: 'Bicycle', type: 'vehicle' },
+      { created_at: t1, updated_at: null, id: 1, name: 'Bicycle', type: 'vehicle', color: 'black' },
     ]);
 
     lt.processEvent({ timestamp: t2, type: 'DELETE', record: { id: 1 } });
@@ -193,8 +202,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: null,
-      name: 'Bike',
       type: 'vehicle',
+      name: 'Bike',
+      color: 'black',
     };
     lt.processEvent({ timestamp: t2, type: 'INSERT', record: { ...record, created_at: t2 } });
     expect(() => lt.processSnapshot([record])).toThrowError(/Conflicting insert/);
@@ -207,8 +217,9 @@ describe('LiveTable Buffering', () => {
       id: 1,
       created_at: t1,
       updated_at: null,
-      name: 'Bike',
       type: 'vehicle',
+      name: 'Bike',
+      color: 'black',
     };
     lt.processEvent({ timestamp: t1, type: 'INSERT', record });
     lt.processSnapshot([record]);

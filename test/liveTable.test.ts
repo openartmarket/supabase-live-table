@@ -49,9 +49,9 @@ describe('liveTable', () => {
       await supabase
         .from('thing')
         .insert([
-          { type: 'ignored', name: 'skateboard' },
-          { type: 'vehicle', name: 'bicycle' },
-          { type: 'ignored', name: 'zeppelin' },
+          { type: 'ignored', name: 'skateboard', color: 'green' },
+          { type: 'vehicle', name: 'bicycle', color: 'blue' },
+          { type: 'ignored', name: 'zeppelin', color: 'black' },
         ])
         .throwOnError();
     });
@@ -59,7 +59,10 @@ describe('liveTable', () => {
 
   it('handles inserts', async () => {
     await hasRecords('vehicle', ['skateboard'], async () => {
-      await supabase.from('thing').insert({ type: 'vehicle', name: 'skateboard' }).throwOnError();
+      await supabase
+        .from('thing')
+        .insert({ type: 'vehicle', name: 'skateboard', color: 'blue' })
+        .throwOnError();
     });
   });
 
@@ -68,9 +71,9 @@ describe('liveTable', () => {
       await supabase
         .from('thing')
         .insert([
-          { type: 'vehicle', name: 'skateboard' },
-          { type: 'vehicle', name: 'bicycle' },
-          { type: 'vehicle', name: 'zeppelin' },
+          { type: 'vehicle', name: 'skateboard', color: 'green' },
+          { type: 'vehicle', name: 'bicycle', color: 'blue' },
+          { type: 'vehicle', name: 'zeppelin', color: 'black' },
         ])
         .select()
         .throwOnError();
@@ -83,9 +86,9 @@ describe('liveTable', () => {
       await supabase
         .from('thing')
         .insert([
-          { type: 'vehicle', name: 'skateboard' },
-          { type: 'vehicle', name: 'bicycle' },
-          { type: 'vehicle', name: 'zeppelin' },
+          { type: 'vehicle', name: 'skateboard', color: 'green' },
+          { type: 'vehicle', name: 'bicycle', color: 'blue' },
+          { type: 'vehicle', name: 'zeppelin', color: 'black' },
         ])
         .throwOnError();
       await supabase.from('thing').update({ name: 'bike' }).eq('name', 'bicycle').throwOnError();
@@ -100,9 +103,9 @@ describe('liveTable', () => {
         await supabase
           .from('thing')
           .insert([
-            { type: 'vehicle', name: 'skateboard' },
-            { type: 'vehicle', name: 'bicycle' },
-            { type: 'vehicle', name: 'zeppelin' },
+            { type: 'vehicle', name: 'skateboard', color: 'green' },
+            { type: 'vehicle', name: 'bicycle', color: 'blue' },
+            { type: 'vehicle', name: 'zeppelin', color: 'black' },
           ])
           .throwOnError();
       },
