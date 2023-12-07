@@ -45,61 +45,77 @@ describe('liveTable', () => {
   });
 
   it('filters on column', async () => {
-    await hasRecords('vehicle', ['bicycle'], async () => {
-      await supabase
-        .from('thing')
-        .insert([
-          { type: 'ignored', name: 'skateboard', color: 'green' },
-          { type: 'vehicle', name: 'bicycle', color: 'blue' },
-          { type: 'ignored', name: 'zeppelin', color: 'black' },
-        ])
-        .throwOnError();
+    await waitForReplicatToMatch({
+      filterValue: 'vehicle',
+      expectedSortedRecordNames: ['bicycle'],
+      write: async () => {
+        await supabase
+          .from('thing')
+          .insert([
+            { type: 'ignored', name: 'skateboard', color: 'green' },
+            { type: 'vehicle', name: 'bicycle', color: 'blue' },
+            { type: 'ignored', name: 'zeppelin', color: 'black' },
+          ])
+          .throwOnError();
+      },
     });
   });
 
   it('handles inserts', async () => {
-    await hasRecords('vehicle', ['skateboard'], async () => {
-      await supabase
-        .from('thing')
-        .insert({ type: 'vehicle', name: 'skateboard', color: 'blue' })
-        .throwOnError();
+    await waitForReplicatToMatch({
+      filterValue: 'vehicle',
+      expectedSortedRecordNames: ['skateboard'],
+      write: async () => {
+        await supabase
+          .from('thing')
+          .insert({ type: 'vehicle', name: 'skateboard', color: 'blue' })
+          .throwOnError();
+      },
     });
   });
 
   it('handles deletes', async () => {
-    await hasRecords('vehicle', ['skateboard', 'zeppelin'], async () => {
-      await supabase
-        .from('thing')
-        .insert([
-          { type: 'vehicle', name: 'skateboard', color: 'green' },
-          { type: 'vehicle', name: 'bicycle', color: 'blue' },
-          { type: 'vehicle', name: 'zeppelin', color: 'black' },
-        ])
-        .select()
-        .throwOnError();
-      await supabase.from('thing').delete().eq('name', 'bicycle').throwOnError();
+    await waitForReplicatToMatch({
+      filterValue: 'vehicle',
+      expectedSortedRecordNames: ['skateboard', 'zeppelin'],
+      write: async () => {
+        await supabase
+          .from('thing')
+          .insert([
+            { type: 'vehicle', name: 'skateboard', color: 'green' },
+            { type: 'vehicle', name: 'bicycle', color: 'blue' },
+            { type: 'vehicle', name: 'zeppelin', color: 'black' },
+          ])
+          .select()
+          .throwOnError();
+        await supabase.from('thing').delete().eq('name', 'bicycle').throwOnError();
+      },
     });
   });
 
   it('handles updates', async () => {
-    await hasRecords('vehicle', ['bike', 'skateboard', 'zeppelin'], async () => {
-      await supabase
-        .from('thing')
-        .insert([
-          { type: 'vehicle', name: 'skateboard', color: 'green' },
-          { type: 'vehicle', name: 'bicycle', color: 'blue' },
-          { type: 'vehicle', name: 'zeppelin', color: 'black' },
-        ])
-        .throwOnError();
-      await supabase.from('thing').update({ name: 'bike' }).eq('name', 'bicycle').throwOnError();
+    await waitForReplicatToMatch({
+      filterValue: 'vehicle',
+      expectedSortedRecordNames: ['bike', 'skateboard', 'zeppelin'],
+      write: async () => {
+        await supabase
+          .from('thing')
+          .insert([
+            { type: 'vehicle', name: 'skateboard', color: 'green' },
+            { type: 'vehicle', name: 'bicycle', color: 'blue' },
+            { type: 'vehicle', name: 'zeppelin', color: 'black' },
+          ])
+          .throwOnError();
+        await supabase.from('thing').update({ name: 'bike' }).eq('name', 'bicycle').throwOnError();
+      },
     });
   });
 
   it('handles updates that arrive after snapshot', async () => {
-    await hasRecords(
-      'vehicle',
-      ['bike', 'skateboard', 'zeppelin'],
-      async () => {
+    await waitForReplicatToMatch({
+      filterValue: 'vehicle',
+      expectedSortedRecordNames: ['bike', 'skateboard', 'zeppelin'],
+      write: async () => {
         await supabase
           .from('thing')
           .insert([
@@ -109,18 +125,25 @@ describe('liveTable', () => {
           ])
           .throwOnError();
       },
-      async () => {
+      subscribed: async () => {
         await supabase.from('thing').update({ name: 'bike' }).eq('name', 'bicycle').throwOnError();
       },
-    );
+    });
   });
 
-  async function hasRecords(
-    columnValue: string,
-    expected: readonly string[],
-    write: () => Promise<void>,
-    subscribed?: () => Promise<void>,
-  ): Promise<void> {
+  type Params = {
+    filterValue: string;
+    expectedSortedRecordNames: readonly string[];
+    write: () => Promise<void>;
+    subscribed?: () => Promise<void>;
+  };
+
+  async function waitForReplicatToMatch({
+    filterValue,
+    expectedSortedRecordNames,
+    write,
+    subscribed,
+  }: Params): Promise<void> {
     let error: Error | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -128,12 +151,12 @@ describe('liveTable', () => {
       const channel = liveTable<ThingRow>(supabase, {
         table: 'thing',
         filterColumn: 'type',
-        filterValue: columnValue,
+        filterValue,
         callback: (err, records) => {
           if (err) return reject(err);
           const names = [...records].map((r) => r.name).sort();
           try {
-            expect(names).toEqual(expected);
+            expect(names).toEqual(expectedSortedRecordNames);
             channel
               .unsubscribe()
               .then(() => {
