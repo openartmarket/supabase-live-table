@@ -219,7 +219,10 @@ describe('LiveTable Buffering', () => {
 export class MermaidLiveTable implements ILiveTable<ThingRow> {
   private readonly fileStream: Writable;
 
-  constructor(private readonly delegate: ILiveTable<ThingRow>, name: string) {
+  constructor(
+    private readonly delegate: ILiveTable<ThingRow>,
+    name: string,
+  ) {
     const path = `./docs/sequence-diagrams/${name.toLowerCase().replace(/\s/g, '-')}.md`;
     this.fileStream = fs.createWriteStream(path, 'utf-8');
     this.fileStream.write(`### ${name}\n\n`);
