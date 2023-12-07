@@ -182,7 +182,7 @@ export class LiveTable<TableRow extends LiveRow> implements ILiveTable<TableRow>
       case 'UPDATE': {
         const id = record.id;
         if (!id) {
-          throw new Error(`Cannot delete. Record has no id: ${JSON.stringify(record)}`);
+          throw new Error(`Cannot update. Record has no id: ${JSON.stringify(record)}`);
         }
         const oldRecord = this.recordById.get(id);
         if (oldRecord === undefined) {
