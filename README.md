@@ -1,3 +1,5 @@
+[![Continuous Integration](https://github.com/openartmarket/supabase-live-table/actions/workflows/ci.yml/badge.svg)](https://github.com/openartmarket/supabase-live-table/actions/workflows/ci.yml)
+
 # Supabase Live Table
 
 In-memory replication of a Postgres table, synchronized with [Supabase Realtime](https://supabase.com/docs/guides/realtime).

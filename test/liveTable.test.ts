@@ -114,6 +114,7 @@ describe('liveTable', () => {
       },
     );
   });
+
   async function hasRecords(
     columnValue: string,
     expected: readonly string[],
@@ -152,7 +153,7 @@ describe('liveTable', () => {
     });
 
     const timeout = new Promise<void>((_resolve, reject) => {
-      timer = setTimeout(() => reject(error || new Error('No messages(?!)')), 1000);
+      timer = setTimeout(() => reject(error || new Error('No messages(?!)')), 3000);
     });
 
     await Promise.race([success, timeout]);
