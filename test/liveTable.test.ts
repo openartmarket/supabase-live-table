@@ -45,10 +45,9 @@ describe('liveTable', () => {
   });
 
   it('filters on column', async () => {
-    await waitForReplicatToMatch({
+    await waitForReplicaToMatch({
       filterValue: 'vehicle',
-      expectedSortedRecordNames: ['bicycle'],
-      write: async () => {
+      writeAfterSubscribed: async () => {
         await supabase
           .from('thing')
           .insert([
@@ -58,27 +57,27 @@ describe('liveTable', () => {
           ])
           .throwOnError();
       },
+      expectedSortedRecordNames: ['bicycle'],
     });
   });
 
   it('handles inserts', async () => {
-    await waitForReplicatToMatch({
+    await waitForReplicaToMatch({
       filterValue: 'vehicle',
-      expectedSortedRecordNames: ['skateboard'],
-      write: async () => {
+      writeAfterSubscribed: async () => {
         await supabase
           .from('thing')
           .insert({ type: 'vehicle', name: 'skateboard', color: 'blue' })
           .throwOnError();
       },
+      expectedSortedRecordNames: ['skateboard'],
     });
   });
 
   it('handles deletes', async () => {
-    await waitForReplicatToMatch({
+    await waitForReplicaToMatch({
       filterValue: 'vehicle',
-      expectedSortedRecordNames: ['skateboard', 'zeppelin'],
-      write: async () => {
+      writeAfterSubscribed: async () => {
         await supabase
           .from('thing')
           .insert([
@@ -90,14 +89,14 @@ describe('liveTable', () => {
           .throwOnError();
         await supabase.from('thing').delete().eq('name', 'bicycle').throwOnError();
       },
+      expectedSortedRecordNames: ['skateboard', 'zeppelin'],
     });
   });
 
   it('handles updates', async () => {
-    await waitForReplicatToMatch({
+    await waitForReplicaToMatch({
       filterValue: 'vehicle',
-      expectedSortedRecordNames: ['bike', 'skateboard', 'zeppelin'],
-      write: async () => {
+      writeAfterSubscribed: async () => {
         await supabase
           .from('thing')
           .insert([
@@ -108,52 +107,37 @@ describe('liveTable', () => {
           .throwOnError();
         await supabase.from('thing').update({ name: 'bike' }).eq('name', 'bicycle').throwOnError();
       },
-    });
-  });
-
-  it('handles updates that arrive after snapshot', async () => {
-    await waitForReplicatToMatch({
-      filterValue: 'vehicle',
       expectedSortedRecordNames: ['bike', 'skateboard', 'zeppelin'],
-      write: async () => {
-        await supabase
-          .from('thing')
-          .insert([
-            { type: 'vehicle', name: 'skateboard', color: 'green' },
-            { type: 'vehicle', name: 'bicycle', color: 'blue' },
-            { type: 'vehicle', name: 'zeppelin', color: 'black' },
-          ])
-          .throwOnError();
-      },
-      subscribed: async () => {
-        await supabase.from('thing').update({ name: 'bike' }).eq('name', 'bicycle').throwOnError();
-      },
     });
   });
 
   type Params = {
     filterValue: string;
+    writeAfterSubscribed: () => Promise<void>;
     expectedSortedRecordNames: readonly string[];
-    write: () => Promise<void>;
-    subscribed?: () => Promise<void>;
   };
 
-  async function waitForReplicatToMatch({
+  async function waitForReplicaToMatch({
     filterValue,
+    writeAfterSubscribed,
     expectedSortedRecordNames,
-    write,
-    subscribed,
   }: Params): Promise<void> {
     let error: Error | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const success = new Promise<void>((resolve, reject) => {
+      let firstCallback = true;
       const channel = liveTable<ThingRow>(supabase, {
         table: 'thing',
         filterColumn: 'type',
         filterValue,
         callback: (err, records) => {
           if (err) return reject(err);
+          if (firstCallback) {
+            writeAfterSubscribed().catch(reject);
+            firstCallback = false;
+          }
+
           const names = [...records].map((r) => r.name).sort();
           try {
             expect(names).toEqual(expectedSortedRecordNames);
@@ -167,12 +151,8 @@ describe('liveTable', () => {
           } catch (err) {
             error = err as Error;
           }
-          if (subscribed) {
-            subscribed().catch(reject);
-          }
         },
       });
-      write().catch(reject);
     });
 
     const timeout = new Promise<void>((_resolve, reject) => {
