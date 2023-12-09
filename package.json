@@ -40,8 +40,8 @@
     "@supabase/supabase-js": "2.39.0",
     "@typescript-eslint/eslint-plugin": "6.13.2",
     "@typescript-eslint/parser": "6.13.2",
-    "@vitest/coverage-v8": "1.0.2",
-    "@vitest/ui": "1.0.2",
+    "@vitest/coverage-v8": "1.0.3",
+    "@vitest/ui": "1.0.3",
     "eslint": "8.55.0",
     "eslint-config-prettier": "9.1.0",
     "husky": "8.0.3",
@@ -52,8 +52,8 @@
     "supabase": "1.115.5",
     "tsup": "8.0.1",
     "typescript": "5.3.3",
-    "vite": "5.0.6",
-    "vitest": "1.0.2"
+    "vite": "5.0.7",
+    "vitest": "1.0.3"
   },
   "prettier": {
     "printWidth": 100,
