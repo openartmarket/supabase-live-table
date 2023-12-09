@@ -178,6 +178,37 @@ describe('LiveTable Buffering', () => {
     await lt.close();
   });
 
+  it('merges updates with previous value', async (test) => {
+    const lt = new MermaidLiveTable(new LiveTable<ThingRow>(parseTimestamp), test.task.name);
+
+    lt.subscribe();
+    lt.subscribed();
+    lt.requestSnapshot();
+
+    const streamRecord: Partial<ThingRow> = {
+      id: 1,
+      created_at: t1,
+      updated_at: t3,
+      type: 'vehicle',
+      color: 'red',
+    };
+    lt.processEvent({ timestamp: t3, type: 'UPDATE', record: streamRecord });
+
+    const snapshotRecord = {
+      id: 1,
+      created_at: t1,
+      updated_at: t2,
+      type: 'vehicle',
+      name: 'Bicycle',
+      color: 'black',
+    };
+    lt.processSnapshot([snapshotRecord]);
+
+    expect(lt.records).toEqual([{ ...snapshotRecord, color: 'red', updated_at: t3 }]);
+
+    await lt.close();
+  });
+
   it('replays deletes that arrived after the snapshot', async (test) => {
     const lt = new MermaidLiveTable(new LiveTable<ThingRow>(parseTimestamp), test.task.name);
 
