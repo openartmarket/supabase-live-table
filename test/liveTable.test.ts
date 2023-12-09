@@ -18,6 +18,9 @@ describe('liveTable', () => {
 
   beforeEach(async () => {
     await supabase.from('thing').delete().neq('type', '').throwOnError();
+    // Sleep a little to reduct the probability of having realtime events from the last test
+    // leak into the next test.
+    await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
   it('shows an example of usage for the README', async () => {
@@ -47,7 +50,7 @@ describe('liveTable', () => {
   it('filters on column', async () => {
     await waitForReplicaToMatch({
       filterValue: 'vehicle',
-      writeAfterSubscribed: async () => {
+      onFirstCallback: async () => {
         await supabase
           .from('thing')
           .insert([
@@ -64,7 +67,7 @@ describe('liveTable', () => {
   it('handles inserts', async () => {
     await waitForReplicaToMatch({
       filterValue: 'vehicle',
-      writeAfterSubscribed: async () => {
+      onFirstCallback: async () => {
         await supabase
           .from('thing')
           .insert({ type: 'vehicle', name: 'skateboard', color: 'blue' })
@@ -77,7 +80,7 @@ describe('liveTable', () => {
   it('handles deletes', async () => {
     await waitForReplicaToMatch({
       filterValue: 'vehicle',
-      writeAfterSubscribed: async () => {
+      onFirstCallback: async () => {
         await supabase
           .from('thing')
           .insert([
@@ -96,7 +99,7 @@ describe('liveTable', () => {
   it('handles updates', async () => {
     await waitForReplicaToMatch({
       filterValue: 'vehicle',
-      writeAfterSubscribed: async () => {
+      onFirstCallback: async () => {
         await supabase
           .from('thing')
           .insert([
@@ -113,13 +116,13 @@ describe('liveTable', () => {
 
   type Params = {
     filterValue: string;
-    writeAfterSubscribed: () => Promise<void>;
+    onFirstCallback: () => Promise<void>;
     expectedSortedRecordNames: readonly string[];
   };
 
   async function waitForReplicaToMatch({
     filterValue,
-    writeAfterSubscribed,
+    onFirstCallback,
     expectedSortedRecordNames,
   }: Params): Promise<void> {
     let error: Error | undefined;
@@ -134,7 +137,7 @@ describe('liveTable', () => {
         callback: (err, records) => {
           if (err) return reject(err);
           if (firstCallback) {
-            writeAfterSubscribed().catch(reject);
+            onFirstCallback().catch(reject);
             firstCallback = false;
           }
 
