@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.1.0] - 2023-12-09
 ### Fixed
 - Merge streamed updates with existing record. Fixes [#2](https://github.com/openartmarket/supabase-live-table/issues/2)
 
@@ -42,7 +43,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - First version of the project
 
-[Unreleased]: https://github.com/rcmachado/changelog/compare/v0.0.7...HEAD
+[Unreleased]: https://github.com/rcmachado/changelog/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/rcmachado/changelog/compare/v0.0.7...v0.1.0
 [0.0.7]: https://github.com/rcmachado/changelog/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/rcmachado/changelog/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/rcmachado/changelog/compare/v0.0.4...v0.0.5
